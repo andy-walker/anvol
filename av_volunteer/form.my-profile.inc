@@ -290,7 +290,7 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
     
     drupal_add_css($module_path . '/js/jstree/themes/default/style.min.css');
     drupal_add_css($module_path . '/css/base.css');
-    drupal_add_js($module_path . '/js/jstree/jstree.js');
+    drupal_add_js($module_path . '/js/jstree/dist/jstree.min.js');
     drupal_add_js($module_path . '/js/skills.js');
 
     $skills = array();
