@@ -179,7 +179,7 @@ function av_volunteer_my_profile($form, $form_state) {
 function av_volunteer_my_profile_details_tab($form, $form_state) {
 
     # for charity reps, display a different form here
-    if (_av_volunteer_is_a('Charity Rep'))
+    if (av_role_has_roles('Charity Rep'))
         return av_volunteer_my_profile_details_tab_charity($form, $form_state);
 
     $yes_no = array(
@@ -228,7 +228,7 @@ function av_volunteer_my_profile_details_tab($form, $form_state) {
 
         'why_you_want_do_this' => array(
             '#type'  => 'textarea',
-            '#title' => t('Why do you want to do this?')
+            '#title' => t('Why do you want to volunteer with us?')
         ),
 
         'comment' => array(
@@ -270,6 +270,16 @@ function av_volunteer_my_profile_details_tab_charity($form, $form_state) {
             '#type'  => 'textfield',
             '#title' => t('Umbrella'),
             '#size'  => 31
+        ),
+
+        'where_you_hear' => array(
+            '#type'    => 'select',
+            '#title'   => t('Where did you hear about us?'),
+            '#options' => array(
+                0 => t('Select ...'),
+                1 => t('Search Engine'),
+                2 => t('Recommendation')
+            )
         ),
 
         'submit' => array(
@@ -410,7 +420,7 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
             '#size'  => 70
         );      
 
-        if (_av_volunteer_is_a('website admin', 'Assessor'))
+        if (av_roles_has_role('website admin', 'Assessor'))
             $form['reference_ok' . $index] = array(
                 '#type'         => 'checkbox',
                 '#field_suffix' => t('Ok'),
@@ -418,7 +428,7 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
 
     }
 
-    if (_av_volunteer_is_a('website admin', 'Assessor')) {
+    if (av_role_has_roles('website admin', 'Assessor')) {
 
         $form['dbs_check'] = array(
             '#type'        => 'fieldset',

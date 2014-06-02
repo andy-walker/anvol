@@ -155,9 +155,9 @@ function av_volunteer_menu() {
     
     );
 
-    $items['volunteer/accounts/opportunities'] = array(
+    $items['volunteer/accounts/my-opportunities'] = array(
     
-        'title'            => 'Opportunities',
+        'title'            => 'My Opportunities',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.accounts.inc',
         'access callback'  => true,

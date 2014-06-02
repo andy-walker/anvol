@@ -54,7 +54,6 @@ class Opportunity_Template_Import {
             # act on any errors which occurred
             if (!$success) {
                 if ($template->isError()) {
-                    print_r($template->getErrors());
                     foreach ($template->getErrors() as $error_message)
                         drush_log(dt(
                             "Template '@xmlfile' @error", array(

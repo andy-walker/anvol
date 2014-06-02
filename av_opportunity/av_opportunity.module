@@ -8,6 +8,43 @@
  */
 
 /**
+ * Implementation of hook_form_alter
+ */
+function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
+
+    switch ($form_id) {
+        
+        # remove breadcrumb on following form, as per client request
+        case 'volunteer_opportunity_node_form':
+            drupal_set_breadcrumb('');
+            break;
+        
+        
+        case 'views_exposed_form':
+
+            switch (reset(explode('?', request_uri()))) {
+                
+                # remove breadcrumb and mark exposed filter submit 'Update List'
+                case '/volunteering/charity-opportunities':
+                    drupal_set_breadcrumb('');
+                    $form['submit']['#value'] = t('Update List'); 
+                    break;   
+
+                # just mark exposed filter submit 'Update List'
+                case '/assessor/opportunities':
+                case '/volunteer/opportunities/search':
+                    $form['submit']['#value'] = t('Update List');
+                    break;                  
+            
+            }
+ 
+            break;
+    
+    }
+
+}
+
+/**
  * Implementation of hook_init
  */
 function av_opportunity_init() {

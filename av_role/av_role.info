@@ -4,5 +4,3 @@ version = 7.x-1.0
 core = 7.x
 package = ANVol
 php = 5.3
-
-dependencies[] = civicrm
