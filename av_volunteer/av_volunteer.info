@@ -5,6 +5,6 @@ core = 7.x
 package = ANVol
 php = 5.3
 
-dependencies[] = abilitynet_role
+dependencies[] = av_role
 dependencies[] = jquery_update
 dependencies[] = civicrm
