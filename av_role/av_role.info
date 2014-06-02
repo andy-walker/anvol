@@ -2,7 +2,7 @@ name = AbilityNet Role
 description = Handles role lookup for ANVol custom modules
 version = 7.x-1.0
 core = 7.x
-package = IT4C
+package = ANVol
 php = 5.3
 
 dependencies[] = civicrm

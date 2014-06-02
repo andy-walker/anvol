@@ -1,8 +1,8 @@
-name = AbilityNet Opportunity
+name = ANVol Opportunity
 description = Opportunity customizations
 version = 7.x-1.0
 core = 7.x
-package = IT4C
+package = ANVol
 php = 5.3
 
 dependencies[] = abilitynet_role
