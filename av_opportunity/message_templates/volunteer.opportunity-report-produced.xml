@@ -1,0 +1,16 @@
+<template>
+  <template_group>msg_tpl_workflow_uf</template_group>
+  <template_name>volunteer_opportunity_report_produced</template_name>
+  <label>Opportunities » Volunteer » Opportunity Completion Report Produced</label>
+  <subject>Opportunity Completion Report Produced</subject>
+  <text><![CDATA[
+
+Plaintext email goes here
+
+  ]]></text>
+  <html><![CDATA[
+
+HTML Email goes <strong>here</strong>
+
+  ]]></html>
+</template>

@@ -1,0 +1,184 @@
+/* Base css for volunteer forms - andyw@circle, 21/04/2014 */
+
+/* Styles for treeview control, skills tab */
+
+#add-skills {
+    position:relative;
+}
+
+#add-skills-link { cursor:pointer; }
+
+#skills-popup {
+    position:absolute;
+    display:none;
+    background:white;
+    border-radius:4px;
+    border:1px solid #ccc;
+    padding:10px 10px 10px 8px;
+    color:#444;
+}
+
+#skills-popup .button-wrapper {
+    text-align: right;
+}
+
+#skills-popup button {
+    font-size:0.9em;
+    margin-top:4px;
+}
+
+/* Hide checkbox on parent nodes */
+#tree-container i.jstree-checkbox {
+    display:none;
+}
+
+#tree-container li.jstree-leaf > a > i.jstree-checkbox {
+    display:inline-block;
+}
+
+#tree-container li.jstree-leaf > a > i.jstree-themeicon {
+    display: none;
+}
+
+/* Inline checkboxes (best time to contact) */
+
+.best-time-label {
+    font-weight:bold;
+}
+
+.checkbox-table {
+    margin: 12px 0 20px 0;
+    display: table;
+    width: auto;
+}
+
+.checkbox-row {
+    display:table-row;
+    width:auto;
+    height:32px;
+}
+
+.checkbox-header-row {
+    display:table-row;
+    width:auto;
+    height:25px;
+}
+
+.checkbox-header-row .checkbox-cell.row-label {
+    border-radius:8px 0 0 0;
+    height:25px;
+}
+
+.checkbox-header-row .checkbox-header.round-right {
+    border-radius:0 8px 0 0;
+}
+
+.checkbox-row .form-item, .checkbox-header {
+    float:left;/*fix for  buggy browsers*/
+    display:table-column;
+    width:50px;
+    border-bottom:1px solid #eee;
+    border-right:1px solid #eee;
+    height:32px;
+    margin-bottom:0;
+}
+
+.checkbox-header {
+    text-align:center;
+    height:25px;
+    background:#eee;
+    padding-top:3px;
+}
+
+.checkbox-cell.row-label {
+    float:left;/*fix for  buggy browsers*/
+    display:table-column;
+    width:85px;
+    font-weight:bold;
+    background:#eee;
+    padding-top:5px;
+    height:32px;
+    padding-left:10px;
+}
+
+.checkbox-row .checkbox + .checkbox, .checkbox-row .checkbox:first-child {
+    margin-top:-1px;
+    position:relative;
+}
+
+.checkbox-row .form-item input {
+    position:absolute;
+    left:18px;
+    top:5px;
+}
+
+.checkbox-row .form-item .description {
+    clear: both;
+}
+
+.checkbox-table, .best-time-label {
+    -moz-transition: opacity 0.5s;
+    -webkit-transition: opacity 0.5s;
+    -o-transition: opacity 0.5s;
+    transition: opacity 0.5s;
+}
+
+
+/* Skills list form styling */
+
+#add-skills {
+    margin-bottom:10px;
+}
+
+.skill-wrapper {
+    padding:8px 0 8px 0;
+    border-top:1px solid #ccc;
+    display:none;
+    overflow:hidden;
+}
+
+.skill-wrapper .skill-label {
+    font-weight:bold;
+    padding:4px 0 0 10px;
+    font-size:1.5em;
+    color:#555;
+}
+
+
+
+.skill-wrapper .form-type-select {
+    float:right;
+    width:100px;
+    padding:0;
+    margin:0 8px 0 0;
+}
+
+.skill-wrapper .form-type-select select {
+    margin:0;
+}
+
+.skill-wrapper button {
+    float:right;
+}
+
+/* Signup form */
+#abilitynet-volunteer-registration-form .form-item-charity-name {
+    height:0;
+    opacity:0;
+    overflow:hidden;
+}
+
+/* Other form tweaks */
+.container-inline-date .form-type-date-popup { 
+    border:none; 
+}
+
+.container-inline-date .form-type-date-popup .date-padding {
+    padding:0;
+}
+
+.container-inline-date .form-type-date-popup input {
+    background:url(images/cal.gif) center right no-repeat white;
+    padding:2px 25px 2px 5px;
+    height:25px;
+}

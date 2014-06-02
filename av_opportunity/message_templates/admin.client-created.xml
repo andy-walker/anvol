@@ -1,0 +1,16 @@
+<template>
+  <template_group>msg_tpl_workflow_uf</template_group>
+  <template_name>admin_client_created</template_name>
+  <label>Opportunities » Admin » Client Created</label>
+  <subject>Client Created</subject>
+  <text><![CDATA[
+
+Plaintext email goes here
+
+  ]]></text>
+  <html><![CDATA[
+
+HTML Email goes <strong>here</strong>
+
+  ]]></html>
+</template>

@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * ANVol Role
+ * Handles role lookup for ANVol custom modules - this is necessary because the role names will potentially change, but
+ * we don't want to refer to the role ids directly, so we're using internal names and resolving them to the correct id.
+ * @author  andyw@circle, 02/06/2014
+ * @package av_role
+ */
+
+/**
+ * Module basically provides this function for role lookup
+ * First arg can be a user object followed by a list of internal role names, or args can be just a list of role names,
+ * in which case we check the roles of the currently logged in user.
+ * @return bool
+ */
+function av_role_has_roles() {
+    
+    global $user;
+    $arguments = func_get_args();
+    $role_map  = _anvol_role_get_role_map();
+
+    # if first argument is user object, use that - otherwise, assume current user
+    is_object(reset($arguments)) ? $user = array_shift($arguments) : null;
+    
+    # iterate through roles, perform $role_map lookup, and attempt to match rid
+    foreach ($arguments as $role)
+        if (isset($user->roles[$role_map[$role]]))
+            return true;
+
+}
+
+/**
+ * Return an array mapping internal role names to ids
+ * @return array
+ */
+function _av_role_get_role_map() {
+    
+    # resolve internal role names to rids
+    static $role_map = array(
+        'anonymous user'       => 1, 
+        'AbilityNet HR'        => 12,
+        'website admin'        => 4,
+        'Website editor'       => 5,
+        'Individual Volunteer' => 7,
+        'Company Volunteer'    => 8,
+        'authenticated user'   => 2,
+        'it4c_administrator'   => 3,
+        'Charity Rep'          => 9,
+        'Assessor'             => 10,
+        'Company Rep'          => 11
+    );
+    
+    return $role_map;
+
+}

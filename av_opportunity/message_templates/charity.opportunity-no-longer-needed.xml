@@ -1,0 +1,16 @@
+<template>
+  <template_group>msg_tpl_workflow_uf</template_group>
+  <template_name>charity_opportunity_no_longer_needed</template_name>
+  <label>Opportunities » Charity » Opportunity No Longer Needed</label>
+  <subject>Opportunity No Longer Needed</subject>
+  <text><![CDATA[
+
+Plaintext email goes here
+
+  ]]></text>
+  <html><![CDATA[
+
+HTML Email goes <strong>here</strong>
+
+  ]]></html>
+</template>

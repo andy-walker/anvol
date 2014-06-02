@@ -1,0 +1,409 @@
+<?php
+
+/**
+ * Module providing form tabs for AbilityNet volunteering system
+ * andyw@circle, 24/05/2014
+ */
+
+/**
+ * Implementation of hook_form_alter
+ */
+function av_volunteer_form_alter(&$form, &$form_state, $form_id) {
+
+    # slot in custom #process handler to re-label the fields on these forms ..
+    if (in_array($form_id, array(
+        'av_volunteer_my_profile_password_tab',
+        'av_volunteer_accounts_password_tab'
+    )))
+        $form['confirm_password']['#process'] = array(
+            'form_process_password_confirm',
+            'av_volunteer_password_confirm',
+            'user_form_process_password_confirm'
+        );
+
+    return $form;
+
+}
+
+/**
+ * Implementation of hook_menu
+ */
+function av_volunteer_menu() {
+
+    module_load_include('inc', 'av_volunteer', 'av_volunteer.settings');
+
+    $items['volunteer/my-profile'] = array(
+        
+        'title'            => t('My Profile'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_my_profile'),
+        'file'             => 'form.my-profile.inc',
+        'access callback'  => '_av_volunteer_is_a',
+        'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'type'             => MENU_NORMAL_ITEM
+    
+    );
+
+    $items['volunteer/my-profile/contact'] = array(
+    
+        'title'            => 'Contact',
+        'type'             => MENU_DEFAULT_LOCAL_TASK,
+        'file'             => 'form.my-profile.inc',
+        'access callback'  => '_av_volunteer_is_a',
+        'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_my_profile_contact_tab'),
+        'weight'           => 1
+    
+    );
+
+    $items['volunteer/my-profile/details'] = array(
+    
+        'title'            => 'Details',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.my-profile.inc',
+        'access callback'  => '_av_volunteer_is_a',
+        'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_my_profile_details_tab'),
+        'weight'           => 2
+    
+    );
+
+    $items['volunteer/my-profile/skills'] = array(
+    
+        'title'            => 'Skills',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.my-profile.inc',
+        'access callback'  => '_av_volunteer_is_a',
+        'access arguments' => array('website admin', 'Individual Volunteer', 'Assessor'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_my_profile_skills_tab'),
+        'weight'           => 3
+    
+    );  
+
+    $items['volunteer/my-profile/references'] = array(
+    
+        'title'            => 'References',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.my-profile.inc',
+        'access callback'  => '_av_volunteer_is_a',
+        'access arguments' => array('website admin', 'Individual Volunteer', 'Assessor'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_my_profile_references_tab'),
+        'weight'           => 4
+    
+    );
+
+    $items['volunteer/my-profile/password'] = array(
+    
+        'title'            => 'Password',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.my-profile.inc',
+        'access callback'  => '_av_volunteer_is_a',
+        'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_my_profile_password_tab'),
+        'weight'           => 5
+
+    ); 
+
+    $items['volunteer/accounts'] = array(
+        'title'            => t('Accounts'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_accounts'),
+        'file'             => 'form.accounts.inc',
+        'access callback'  => true,
+        'type'             => MENU_NORMAL_ITEM
+    );
+
+    $items['volunteer/accounts/contact'] = array(
+    
+        'title'            => 'Contact',
+        'type'             => MENU_DEFAULT_LOCAL_TASK,
+        'file'             => 'form.accounts.inc',
+        'access callback'  => true,
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_accounts_contact_tab'),
+        'weight'           => 1
+    
+    );
+
+    $items['volunteer/accounts/details'] = array(
+    
+        'title'            => 'Details',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.accounts.inc',
+        'access callback'  => true,
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_accounts_details_tab'),
+        'weight'           => 2
+    
+    );
+
+
+    $items['volunteer/accounts/members'] = array(
+    
+        'title'            => 'Members',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.accounts.inc',
+        'access callback'  => true,
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_accounts_members_tab'),
+        'weight'           => 3
+    
+    );
+
+    $items['volunteer/accounts/opportunities'] = array(
+    
+        'title'            => 'Opportunities',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.accounts.inc',
+        'access callback'  => true,
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_accounts_opportunities_tab'),
+        'weight'           => 4
+    
+    );
+
+    $items['volunteer/accounts/password'] = array(
+    
+        'title'            => 'Password',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.accounts.inc',
+        'access callback'  => true,
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_accounts_password_tab'),
+        'weight'           => 5
+
+    );
+
+    $items['volunteer/opportunities'] = array(
+        'title'            => t('My Opportunities'),
+        'page callback'    => 'views_embed_view',
+        'page arguments'   => array('flag_bookmarks', 'page_1'),
+        'access callback'  => true,
+        'type'             => MENU_NORMAL_ITEM
+    );
+   
+    $items['volunteer/opportunities/mine'] = array(
+        'title'            => t('My Opportunities'),
+        'page callback'    => 'views_embed_view',
+        'page arguments'   => array('flag_bookmarks', 'page_1'),
+        'access callback'  => true,
+        'type'             => MENU_DEFAULT_LOCAL_TASK,
+        'weight'           => 1
+    );
+    
+    // Additional tab for opportunities working on
+    $items['volunteer/opportunities/working'] = array(
+        'title'            => t('Opportunities working on'),
+        'page callback'    => 'views_embed_view',
+        'page arguments'   => array('flag_bookmarks', 'page_2'),
+        'access callback'  => true,
+        'type'             => MENU_LOCAL_TASK,
+        'weight'           => 2
+    );
+    
+    // Additional tab for opportunities completed
+	$items['volunteer/opportunities/completed'] = array(
+		'title'            => t('Opportunities Completed'),
+		'page callback'    => 'views_embed_view',
+		'page arguments'   => array('flag_bookmarks', 'page_3'),
+		'access callback'  => true,
+		'type'             => MENU_LOCAL_TASK,
+		'weight'           => 3
+	);
+
+    # 'All Opportunities' renamed 'Search Opportunities' as per AN request
+    $items['volunteer/opportunities/search'] = array(
+        'title'            => t('Search Opportunities'),
+        'page callback'    => 'views_embed_view',
+        'page arguments'   => array('admin_opportunities_view'),
+        'access callback'  => true,
+        'type'             => MENU_LOCAL_TASK,
+        'weight'           => 4
+    );
+
+    # volunteer registration form
+    $items['volunteer/registration'] = array(
+
+        'title'            => t('User Registration'),
+        'type'             => MENU_NORMAL_ITEM,
+        'file'             => 'form.user.inc',
+        'access callback'  => true,
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_registration_form')
+
+    );
+
+    # redirect to 'skills' taxonomy
+    $items['admin/config/volunteer'] = array(
+
+        'title'            => t('Volunteer Module'),
+        'type'             => MENU_NORMAL_ITEM,
+        'access arguments' => array('administer volunteer module'),
+        'page callback'    => 'drupal_goto',
+        'page arguments'   => array('admin/structure/taxonomy/' . ABNV_SKILLS_VOCABULARY)
+    
+    );
+
+    $items['admin/config/volunteer/skills'] = array(
+
+        'title'            => t('Skills'),
+        'type'             => MENU_NORMAL_ITEM,
+        'access arguments' => array('administer volunteer module'),
+        'page callback'    => 'drupal_goto',
+        'page arguments'   => array('admin/structure/taxonomy/' . ABNV_SKILLS_VOCABULARY)
+    
+    );
+
+    return $items;
+
+}
+
+/**
+ * Implementation of form_process_password_confirm
+ */
+function av_volunteer_password_confirm($element) {
+    
+    $element['pass1']['#title'] = t("New Password");
+    $element['pass2']['#title'] = t("Confirm New Password");
+    return $element;
+
+}
+
+/**
+ * Implementation of hook_permission
+ */
+function av_volunteer_permission() {
+    
+    return array(
+
+        'access volunteer module' => array(
+            'title'       => t('Access Volunteer module'),
+            'description' => t('Access frontend functionality of the AbilityNet Volunteer module - to be granted to volunteers.'),
+        ),
+
+        'administer volunteer module' => array(
+            'title'           => t('Administer Volunteer module'),
+            'description'     => t('Perform administration tasks related to the AbilityNet Volunteer module'),
+            'restrict access' => true
+        ),
+
+    );
+
+}
+
+/**
+ * Implementation of hook_theme
+ */
+function av_volunteer_theme($existing, $type, $theme, $path) {
+
+    return array(
+        'av_volunteer-skills-treeview' => array(
+            'template'  => 'skills-treeview',
+            'path'      => drupal_get_path('module', 'av_volunteer') . '/templates',
+            'variables' => array(
+                'skills' => null
+            )
+        )
+    );
+
+}
+
+/**
+ * Helper function to retrieve an array of uk counties from CiviCRM
+ * @return array of counties keyed by state_province_id
+ */
+function _av_volunteer_get_counties() {
+    
+    civicrm_initialize();
+    $counties = array();
+
+    $dao = CRM_Core_DAO::executeQuery("
+        SELECT id, name FROM civicrm_state_province WHERE country_id = 1226
+    ");
+    while ($dao->fetch())
+        $counties[$dao->id] = $dao->name;
+
+    return $counties;
+
+}
+
+/**
+ * Helper function to retrieve hierarchical skills list from 'volunteer_skills' vocabulary
+ * sorting by weight
+ * @return StdClass containing two arrays (top-level items, sub-items)
+ */
+function _av_volunteer_get_skills() {
+    
+    module_load_include('inc', 'av_volunteer', 'av_volunteer.settings');
+    
+    # initialize objects / arrays
+    $skills = (object)array(
+        'top_level' => array(),
+        'sub_level' => array()
+    );
+
+    $top_level = array();
+    $sub_level = array();
+    
+    # retrieve taxonomy
+    if (!$terms = taxonomy_get_tree(ABNV_SKILLS_VID))
+        return $skills;
+
+    # iterate through returned array, filling intermediate arrays with weight sortable keys 
+    foreach ($terms as $term)
+        if (!$term->parents[0])
+            $top_level[$term->weight . '-' . $term->tid] = $term->name;
+        else
+            $sub_level[$term->parents[0]][$term->weight . '-' . $term->tid] = $term->name;
+
+    # sort the keys
+    ksort($top_level);
+    foreach (array_keys($sub_level) as $key)
+        ksort($sub_level[$key]);
+
+    # fill final arrays - these are keyed by tid, but we're using the questionable practice
+    # of prepending an underscore to force a string cast, so they remain in the order we insert 
+    # them into the array in - we need the underscore anyway in the template we'll eventually use
+    # this in.
+
+    foreach ($top_level as $key => $value) {
+        $new_key = explode('-', $key);
+        $new_key = end($new_key);
+        $skills->top_level['_' . $new_key] = $value;
+    }
+
+    foreach (array_keys($sub_level) as $key) {
+        foreach ($sub_level[$key] as $sub_key => $sub_value) {
+            $new_key = explode('-', $sub_key);
+            $new_key = end($new_key);
+            $skills->sub_level['_' . $key]['_' . $new_key] = $sub_value;
+        }
+    }
+
+    return $skills;
+    
+}
+
+# use av_role_has_roles() instead if possible
+function _av_volunteer_is_supervisor($user) {
+    return in_array('website admin', $user->roles) or in_array('Assessor', $user->roles);
+}
+
+/**
+ * Access callback to check user roles - made more sense to implement role-based logic in code,
+ * otherwise we'd have had to create a ton of different permissions
+ * @param  multiple (string)
+ * @return bool
+ * @deprecated - use av_role_has_roles instead
+ */
+function _av_volunteer_is_a() {
+    global $user;
+    foreach (func_get_args() as $role)
+        if (in_array($role, $user->roles))
+            return true;
+}

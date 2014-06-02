@@ -1,0 +1,16 @@
+<template>
+  <template_group>msg_tpl_workflow_uf</template_group>
+  <template_name>admin_case_study_request</template_name>
+  <label>Opportunities » Admin » Case Study Request</label>
+  <subject>Case Study Request</subject>
+  <text><![CDATA[
+
+Plaintext email goes here
+
+  ]]></text>
+  <html><![CDATA[
+
+HTML Email goes <strong>here</strong>
+
+  ]]></html>
+</template>

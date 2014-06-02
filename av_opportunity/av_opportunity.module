@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * ANVol Opportunity
+ * Contains customizations relating to the 'opportunity' content type
+ * @author  andyw@circle
+ * @package av_opportunity
+ */
+
+/**
+ * Implementation of hook_init
+ */
+function av_opportunity_init() {
+
+    # register dependency autoloader
+    spl_autoload_register('_av_opportunity_autoload');           
+
+}
+
+/**
+ * Implementation of hook_node_presave
+ */
+function av_opportunity_node_presave($node) {
+
+    switch (true) {
+        
+        # when node is a volunteer_opportunity that's being updated, and the status has changed ..
+        case $node->type == 'volunteer_opportunity'
+             and isset($node->original) 
+             and $node->field_opportunitystate['und'][0]['value'] !=
+                 $node->original->field_opportunitystate['und'][0]['value']:
+
+            # mark pending status change op - we'll perform this after the node is saved to prevent
+            # interfering with the node save process if any errors occur
+            $status = &drupal_static('opportunity_status_change', (object)array(
+                'old' => $node->original->status,
+                'new' => $node->status
+            ));
+
+            break;
+
+    }
+
+}
+
+/**
+ * Implementation of hook_node_update
+ */
+function av_opportunity_node_update($node) {
+    
+    # if we have a status change operation pending, perform that now
+    if ($node->type == 'volunteer_opportunity' and $status = drupal_static('opportunity_status_change'))
+        new Opportunity_Status_Change(
+            $node->nid, 
+            $status->old, 
+            $status->new
+        );
+
+}
+
+/**
+ * Autoload callback
+ */
+function _av_opportunity_autoload($entity) {
+
+    if (strpos($entity, 'Opportunity') === 0)
+        module_load_include('php', 'av_opportunity', sprintf(
+            'classes/class.%s', strtolower(implode('-', array_splice(explode('_', $entity), 1)))
+        ));
+
+}

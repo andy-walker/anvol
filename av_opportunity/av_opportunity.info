@@ -1,0 +1,9 @@
+name = AbilityNet Opportunity
+description = Opportunity customizations
+version = 7.x-1.0
+core = 7.x
+package = IT4C
+php = 5.3
+
+dependencies[] = abilitynet_role
+dependencies[] = civicrm

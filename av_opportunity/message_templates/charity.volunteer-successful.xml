@@ -1,0 +1,16 @@
+<template>
+  <template_group>msg_tpl_workflow_uf</template_group>
+  <template_name>charity_volunteer_successful</template_name>
+  <label>Opportunities » Charity » Volunteer Successful</label>
+  <subject>Volunteer Successful</subject>
+  <text><![CDATA[
+
+Plaintext email goes here
+
+  ]]></text>
+  <html><![CDATA[
+
+HTML Email goes <strong>here</strong>
+
+  ]]></html>
+</template>
