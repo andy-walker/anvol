@@ -187,7 +187,7 @@ function av_volunteer_my_profile_details_tab($form, $form_state) {
         'no'  => t('No')
     );
 
-    return $form + array(
+    $form += array(
 
         'work_type' => array(
             '#type'    => 'checkboxes',
@@ -255,15 +255,49 @@ function av_volunteer_my_profile_details_tab($form, $form_state) {
         'submit' => array(
             '#type'  => 'submit',
             '#value' => t('Save')
-        )
+        ),
 
     );
+
+    return $form;
 
 }
 
 function av_volunteer_my_profile_details_tab_charity($form, $form_state) {
 
+    $yes_no = array(
+        'yes' => t('Yes'),
+        'no'  => t('No')
+    );
+
     return $form + array(
+
+        'work_type' => array(
+            '#type'    => 'checkboxes',
+            '#title'   => ' ',
+            '#options' => array(
+                1 => t('I want to help disabled people at home'),
+                2 => t('I want to help charities')
+            )
+        ),
+    
+        'monthly_newsletter' => array(
+            '#type'    => 'radios',
+            '#options' => $yes_no,
+            '#title'   => t('Monthly Newsletter')
+        ),
+
+        'email_opportunities' => array(
+            '#type'    => 'radios',
+            '#options' => $yes_no,
+            '#title'   => t('Email Opportunities')
+        ),
+
+        'share_details' => array(
+            '#type'    => 'radios',
+            '#options' => $yes_no,
+            '#title'   => t('Share Details')
+        ),
 
         'charity_type' => array(
             '#type'  => 'textfield',
@@ -293,8 +327,24 @@ function av_volunteer_my_profile_details_tab_charity($form, $form_state) {
             '#title'   => t('Where did you hear about us?'),
             '#options' => array(
                 0 => t('Select ...'),
-                1 => t('Search Engine'),
-                2 => t('Recommendation')
+                1 => t('Personal Recommendation'),
+                2 => t('Press article'),
+                3 => t('Exhibition or Event'),
+                4 => t('AbilityNet Event'),
+                5 => t('Volunteer centre or charity'),
+                6 => t('Volunteer'),
+                7 => t('Previously used Service'),
+                8 => t('ITC'),
+                9 => t('Small Charities Coalition'),
+                10 => t('Web search'),
+                11 => t('LASA'),
+                12 => t('Technology Trust'),
+                13 => t('TT Exchange'),
+                14 => t('Infrastructure body'),
+                15 => t('Company Scheme'),
+                16 => t('BCS'),
+                17 => t('AbilityNet Website'),
+                18 => t('Other')
             )
         ),
 
