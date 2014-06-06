@@ -20,7 +20,9 @@ function av_role_has_roles() {
     $role_map  = _av_role_get_role_map();
 
     # if first argument is user object, use that - otherwise, assume current user
-    $user = is_object(reset($arguments)) ? array_shift($arguments) : $GLOBAL['user'];
+    if (is_object(reset($arguments)))
+        $user = array_shift($arguments); 
+    else global $user;
     
     # iterate through roles, perform $role_map lookup, and attempt to match rid
     foreach ($arguments as $role)
@@ -44,8 +46,9 @@ function _av_role_get_role_map() {
         'Individual Volunteer' => 7,
         'Company Volunteer'    => 8,
         'authenticated user'   => 2,
-        'it4c_administrator'   => 3,
+        'IT4C Administrator'   => 3,
         'Charity Rep'          => 9,
+        'Analyst'              => 10,
         'Assessor'             => 10,
         'Company Rep'          => 11
     );
