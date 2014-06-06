@@ -155,9 +155,9 @@ function av_volunteer_menu() {
     
     );
 
-    $items['volunteer/accounts/my-opportunities'] = array(
+    $items['volunteer/accounts/opportunities'] = array(
     
-        'title'            => 'My Opportunities',
+        'title'            => 'Opportunities',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.accounts.inc',
         'access callback'  => true,
@@ -188,7 +188,7 @@ function av_volunteer_menu() {
     );
    
     $items['volunteer/opportunities/mine'] = array(
-        'title'            => t('My Opportunities'),
+        'title'            => t('Interest Expressed'),
         'page callback'    => 'views_embed_view',
         'page arguments'   => array('flag_bookmarks', 'page_1'),
         'access callback'  => true,
@@ -198,7 +198,7 @@ function av_volunteer_menu() {
     
     // Additional tab for opportunities working on
     $items['volunteer/opportunities/working'] = array(
-        'title'            => t('Opportunities working on'),
+        'title'            => t('In Progress'),
         'page callback'    => 'views_embed_view',
         'page arguments'   => array('flag_bookmarks', 'page_2'),
         'access callback'  => true,
@@ -208,7 +208,7 @@ function av_volunteer_menu() {
     
     // Additional tab for opportunities completed
 	$items['volunteer/opportunities/completed'] = array(
-		'title'            => t('Opportunities Completed'),
+		'title'            => t('Work Completed'),
 		'page callback'    => 'views_embed_view',
 		'page arguments'   => array('flag_bookmarks', 'page_3'),
 		'access callback'  => true,
@@ -406,4 +406,18 @@ function _av_volunteer_is_a() {
     foreach (func_get_args() as $role)
         if (in_array($role, $user->roles))
             return true;
+}
+
+function av_volunteer_user_login(&$edit, $account) {
+    //if user is the first argument in the url & reset is not the second argument
+    if (arg(0) == 'user' && arg(1) !== 'reset') {
+
+    watchdog('nathan', '<pre>' . print_r($account, true) . '</pre>');
+
+        if (in_array('Individual Volunteer', $account->roles)) {
+            $_GET['destination'] = 'user/' . $account->uid .'/opportunities';
+        } else {
+            $_GET['destination'] = 'users/' . $account->name;
+        }
+    }
 }

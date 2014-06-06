@@ -221,8 +221,24 @@ function av_volunteer_my_profile_details_tab($form, $form_state) {
             '#title'   => t('Where did you hear about us?'),
             '#options' => array(
                 0 => t('Select ...'),
-                1 => t('Search Engine'),
-                2 => t('Recommendation')
+                1 => t('Personal Recommendation'),
+                2 => t('Press article'),
+                3 => t('Exhibition or Event'),
+                4 => t('AbilityNet Event'),
+                5 => t('Volunteer centre or charity'),
+                6 => t('Volunteer'),
+                7 => t('Previously used Service'),
+                8 => t('ITC'),
+                9 => t('Small Charities Coalition'),
+                10 => t('Web search'),
+                11 => t('LASA'),
+                12 => t('Technology Trust'),
+                13 => t('TT Exchange'),
+                14 => t('Infrastructure body'),
+                15 => t('Company Scheme'),
+                16 => t('BCS'),
+                17 => t('AbilityNet Website'),
+                18 => t('Other')
             )
         ),
 
@@ -420,7 +436,7 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
             '#size'  => 70
         );      
 
-        if (av_roles_has_role('website admin', 'Assessor'))
+        if (av_role_has_roles('website admin', 'Assessor'))
             $form['reference_ok' . $index] = array(
                 '#type'         => 'checkbox',
                 '#field_suffix' => t('Ok'),
