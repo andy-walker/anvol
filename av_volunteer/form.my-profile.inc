@@ -23,6 +23,16 @@ function av_volunteer_my_profile($form, $form_state) {
         '#title'  => t('Signup Date') . ':',
         '#markup' => '&lt;signup date here&gt;'
     );
+
+    $form['title'] = array(
+        '#type' => 'select',
+        '#title' => t('Title'),
+        '#options' => array( 
+            0 => t('Mr'), 
+            1 => t('Mrs'), 
+            2 => t('Miss') 
+        ),
+    );
         
     $form['firstname'] = array(
         '#type'  => 'textfield',
@@ -210,10 +220,13 @@ function av_volunteer_my_profile_details_tab($form, $form_state) {
             '#title'   => t('Email Opportunities')
         ),
 
-        'share_details' => array(
-            '#type'    => 'radios',
-            '#options' => $yes_no,
-            '#title'   => t('Share Details')
+        'share_details'    => array(
+            '#type'        => 'radios',
+            '#options'     => array(
+                    0 => t('Brief Details'),
+                    1 => t('Full Details')
+                ),
+            '#title'       => t('Share Details')
         ),
 
         'where_you_hear' => array(
@@ -295,7 +308,10 @@ function av_volunteer_my_profile_details_tab_charity($form, $form_state) {
 
         'share_details' => array(
             '#type'    => 'radios',
-            '#options' => $yes_no,
+            '#options' => array(
+                    0 => t('Brief Details'),
+                    1 => t('Full Details')
+                ),
             '#title'   => t('Share Details')
         ),
 
