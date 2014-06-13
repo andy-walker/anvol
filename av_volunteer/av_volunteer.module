@@ -515,7 +515,7 @@ function av_volunteer_user_login(&$edit, $account) {
     if (arg(0) == 'user' && arg(1) !== 'reset') {
 
         if (in_array('Individual Volunteer', $account->roles)) {
-            $_GET['destination'] = 'user/' . $account->uid .'/opportunities';
+            $_GET['destination'] = 'volunteer/opportunities/working';
         } else {
             $_GET['destination'] = 'users/' . $account->name;
         }
