@@ -4,6 +4,17 @@ function av_volunteer_my_profile($form, $form_state) {
     
     global $user;
 
+    civicrm_initialize();
+
+    $session =& CRM_Core_Session::singleton();
+    $indID = $session->get('userID');
+
+    // Get contact id from user (set as Volunteer/Charity ID)
+    $contactID = civicrm_api("Contact", "get", array(
+      'version' => '3', 
+      'contact_id' => $indID
+    ));
+
     $module_path = drupal_get_path('module', 'av_volunteer');
     drupal_add_css($module_path . '/css/base.css');
     drupal_add_js($module_path . '/js/profile.js');
@@ -17,6 +28,14 @@ function av_volunteer_my_profile($form, $form_state) {
         'sat' => '',
         'sun' => ''
     );
+
+if (av_role_has_roles('Individual Volunteer', 'website admin')) {
+    $form['volunteer_id'] = array(
+        '#type'   => 'item',
+        '#title'  => t('Volunteer ID') . ':',
+        '#markup' => $contactID['id']
+    );
+}
 
     $form['signup_date'] = array(
         '#type'   => 'item',
@@ -277,6 +296,17 @@ function av_volunteer_my_profile_details_tab($form, $form_state) {
 }
 
 function av_volunteer_my_profile_details_tab_charity($form, $form_state) {
+    
+    civicrm_initialize();
+
+    $session =& CRM_Core_Session::singleton();
+    $indID = $session->get('userID');
+
+    // Get contact id from user (set as Volunteer/Charity ID)
+    $contactID = civicrm_api("Contact", "get", array(
+      'version' => '3', 
+      'contact_id' => $indID
+    ));
 
     $yes_no = array(
         'yes' => t('Yes'),
@@ -284,6 +314,12 @@ function av_volunteer_my_profile_details_tab_charity($form, $form_state) {
     );
 
     return $form + array(
+
+        'charity_id' => array(
+            '#type'   => 'item',
+            '#title'  => t('Charity ID') . ':',
+            '#markup' => $contactID['id']
+        ),
 
         'work_type' => array(
             '#type'    => 'checkboxes',
@@ -483,27 +519,39 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
     $num_references = 2;
 
     foreach (range(0, --$num_references) as $index) {
+
+    if($index == 0)
+        $num = 'One';
+
+    if($index == 1)
+        $num = 'Two';
+
+    $form['reference_' . $index] = array(
+        '#type'        => 'fieldset',
+        '#title'       => 'Reference ' . $num,
+        '#description' => t('(Please provide two references)')
+    );
         
-        $form['reference_name' . $index] = array(
+        $form['reference_' . $index]['reference_name' . $index] = array(
             '#type'  => 'textfield',
             '#title' => t('Reference Name'),
             '#size'  => 40
         );        
         
-        $form['reference_phone' . $index] = array(
+        $form['reference_' . $index]['reference_phone' . $index] = array(
             '#type'  => 'textfield',
             '#title' => t('Phone No'),
             '#size'  => 21
         );
 
-        $form['reference_address' . $index] = array(
+        $form['reference_' . $index]['reference_address' . $index] = array(
             '#type'  => 'textfield',
             '#title' => t('Reference Address'),
             '#size'  => 70
         );      
 
         if (av_role_has_roles('website admin', 'Assessor'))
-            $form['reference_ok' . $index] = array(
+            $form['reference_' . $index]['reference_ok' . $index] = array(
                 '#type'         => 'checkbox',
                 '#field_suffix' => t('Ok'),
             );   
