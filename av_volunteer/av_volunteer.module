@@ -56,18 +56,17 @@ function av_volunteer_menu() {
     
     );
 
-    // role not yet created
-    /*$items['regional-controller/my-profile'] = array(
+    $items['regional-controller/my-profile'] = array(
         
         'title'            => t('My Profile'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
         'access callback'  => '_av_volunteer_is_a',
-        'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'access arguments' => array('website admin', 'Regional Controller'),
         'type'             => MENU_NORMAL_ITEM
     
-    );*/
+    );
 
     $items['charity/my-profile'] = array(
         
@@ -100,7 +99,20 @@ function av_volunteer_menu() {
         'type'             => MENU_DEFAULT_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
         'access callback'  => '_av_volunteer_is_a',
-        'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_my_profile_contact_tab'),
+        'weight'           => 1
+    
+    );
+
+    $items['regional-controller/my-profile/contact'] = array(
+    
+        'title'            => 'Contact',
+        'type'             => MENU_DEFAULT_LOCAL_TASK,
+        'file'             => 'form.my-profile.inc',
+        'access callback'  => '_av_volunteer_is_a',
+        'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor', 'Regional Controller'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_contact_tab'),
         'weight'           => 1
@@ -192,6 +204,19 @@ function av_volunteer_menu() {
         'file'             => 'form.my-profile.inc',
         'access callback'  => '_av_volunteer_is_a',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_my_profile_password_tab'),
+        'weight'           => 5
+
+    );
+
+    $items['regional-controller/my-profile/password'] = array(
+    
+        'title'            => 'Password',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.my-profile.inc',
+        'access callback'  => '_av_volunteer_is_a',
+        'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor', 'Regional Controller'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_password_tab'),
         'weight'           => 5
