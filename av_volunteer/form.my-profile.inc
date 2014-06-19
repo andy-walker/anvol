@@ -229,13 +229,19 @@ function av_volunteer_my_profile_details_tab($form, $form_state) {
     
         'monthly_newsletter' => array(
             '#type'    => 'radios',
-            '#options' => $yes_no,
+            '#options' => array(
+                'monthly_newsletter_yes' => t('Yes'),
+                'monthly_newsletter_no'  => t('No')
+            ),
             '#title'   => t('Monthly Newsletter')
         ),
 
         'email_opportunities' => array(
             '#type'    => 'radios',
-            '#options' => $yes_no,
+            '#options' => array(
+                'email_opportunities_yes' => t('Yes'),
+                'email_opportunities_no'  => t('No')
+            ),
             '#title'   => t('Email Opportunities')
         ),
 
