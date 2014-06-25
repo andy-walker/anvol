@@ -8,6 +8,16 @@
  */
 
 /**
+ * Implementation of hook_comment_insert
+ */
+function av_opportunity_comment_insert($comment) {
+    # hack to force computed field for 'Time spent' on Volunteer Opportunity nodes to update, 
+    # whenever a comment is saved - loading the node and saving it should accomplish that.
+    if ($node = node_load($comment->nid) and $node->type == 'vol_opp')
+        node_save($node);
+}
+
+/**
  * Implementation of hook_form_alter
  */
 function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
