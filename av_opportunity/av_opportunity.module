@@ -76,6 +76,15 @@ function av_opportunity_node_presave($node) {
 
             break;
 
+        # when node is a volunteer_opportunity that's being updated, and a volunteer has been assigned ..
+        case $node->type == 'volunteer_opportunity'
+            and isset($node->original)
+            and $node->field_volunteer4opp['und'][0]['uid'] !=
+                $node->original->field_volunteer4opp['und'][0]['uid']:
+
+            break;
+
+
     }
 
 }
@@ -84,6 +93,8 @@ function av_opportunity_node_presave($node) {
  * Implementation of hook_node_update
  */
 function av_opportunity_node_update($node) {
+
+    static $flag = 0;
     
     # if we have a status change operation pending, perform that now
     if ($node->type == 'volunteer_opportunity' and $status = drupal_static('opportunity_status_change'))
@@ -93,6 +104,82 @@ function av_opportunity_node_update($node) {
             $status->new
         );
 
+    # create a relationship on assigned volunteer to the Charity
+    if($node->type == 'vol_opp' and isset($node->field_volunteer4opp['und'][0]['uid']) and !$flag++) {
+
+        civicrm_initialize();
+
+        # get contact_id from logged-in user
+        $session =& CRM_Core_Session::singleton();
+        $indID = $session->get('userID');
+    
+        # assigned volunteer's uid
+        $volunteer = $node->field_volunteer4opp['und'][0]['uid'];
+    
+        # get the matched civicrm contact from the drupal user record
+        $UFMatch = civicrm_api("UFMatch", "get", array(
+                'version'   => '3',
+                'uf_id'     => $volunteer
+            )
+        );
+    
+        $UFMatchID = $UFMatch['id'];
+        
+        if($node->field_volunteer4opp['und'][0]['uid'] !== $node->orginal->field_volunteer4opp['und'][0]['uid']) {
+    
+            # create a relationship of type 'Volunteer Is' for assigned volunteer
+            $VolRelationship = civicrm_api("Relationship", "Create", array(
+                    'version'               => '3',
+                    'is_active'             => '1',
+                    'relationship_type_id'  => '5',
+                    'contact_id_b'          => $UFMatch['values'][$UFMatchID]['contact_id'],
+                    'contact_id_a'          => $node->field_cid['und'][0]['value']
+                )
+            );
+        }  
+            
+        # if op has been completed, end the relationship
+        if($node->field_completed['und'][0]['value'] !== $node->original->field_completed['und'][0]['value']
+             and $node->field_completed['und'][0]['value'] === 1) {
+
+            # get the end date for the relationship
+            $today = date('m/j/Y');
+
+            $OppRelationship = civicrm_api("Relationship", "Get", array(
+                    'version'               => '3',
+                    'relationship_type_id'  => '5',
+                    'contact_id_b'          => $UFMatch['values'][$UFMatchID]['contact_id'],
+                    'contact_id_a'          => $node->field_cid['und'][0]['value']
+                )
+            );
+
+            $relID = $OppRelationship['id'];
+
+            if(isset($relID)) {
+                # if the opportunity is complete, end the volunteer relationship to the charity
+                $EndRelationship = civicrm_api("Relationship", "Update", array(
+                        'version'   => '3',
+                        'id'        => $OppRelationship['values'][$relID]['id'],
+                        'is_active' => 0,
+                        'end_date'  => $today
+                    )
+                );
+    
+                # create an activity of type 'Volunteering Opportunity' on completion
+                $OpActivity = civicrm_api("Activity", "Create", array(
+                        'version'                    => '3',
+                        'activity_type_id'           => '33',
+                        'activity_subject'           => 'Volunteering Opportunity',
+                        'source_contact_id'          => $node->field_cid['und'][0]['value'],
+                        'assignee_contact_id'        => $UFMatch['values'][$UFMatchID]['contact_id'],
+                        'target_contact_id'          => $UFMatch['values'][$UFMatchID]['contact_id'],
+                        'status_id'                  => '4',
+                        'details'                    => 'some node detail'
+                    )
+                );
+            }  
+        }
+    }
 }
 
 /**
