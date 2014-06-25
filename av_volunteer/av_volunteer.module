@@ -539,10 +539,15 @@ function av_volunteer_user_login(&$edit, $account) {
     //if user is the first argument in the url & reset is not the second argument
     if (arg(0) == 'user' && arg(1) !== 'reset') {
 
-        if (in_array('Individual Volunteer', $account->roles)) {
-            $_GET['destination'] = 'volunteer/opportunities/working';
-        } else {
-            $_GET['destination'] = 'users/' . $account->name;
-        }
+         if (in_array('Individual Volunteer', $account->roles)) {
+             $_GET['destination'] = 'volunteer/opportunities/working';
+         } else if (in_array('Assessor', $account->roles)) {
+             $_GET['destination'] = 'assessor/opportunities';
+         } else if (in_array('Regional Controller', $account->roles)) {
+             $_GET['destination'] = 'regional-controller/opportunities';
+         } else {
+             $_GET['destination'] = 'users/' . $account->name;
+         }
+
     }
 }
