@@ -25,7 +25,7 @@ function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
     switch ($form_id) {
         
         # remove breadcrumb on following form, as per client request
-        case 'volunteer_opportunity_node_form':
+        case 'vol_opp_node_form':
             drupal_set_breadcrumb('');
             break;
         
@@ -71,8 +71,8 @@ function av_opportunity_node_presave($node) {
 
     switch (true) {
         
-        # when node is a volunteer_opportunity that's being updated, and the status has changed ..
-        case $node->type == 'volunteer_opportunity'
+        # when node is a vol_opp that's being updated, and the status has changed ..
+        case $node->type == 'vol_opp'
              and isset($node->original) 
              and $node->field_opportunitystate['und'][0]['value'] !=
                  $node->original->field_opportunitystate['und'][0]['value']:
@@ -86,8 +86,8 @@ function av_opportunity_node_presave($node) {
 
             break;
 
-        # when node is a volunteer_opportunity that's being updated, and a volunteer has been assigned ..
-        case $node->type == 'volunteer_opportunity'
+        # when node is a vol_opp that's being updated, and a volunteer has been assigned ..
+        case $node->type == 'vol_opp'
             and isset($node->original)
             and $node->field_volunteer4opp['und'][0]['uid'] !=
                 $node->original->field_volunteer4opp['und'][0]['uid']:
@@ -107,7 +107,7 @@ function av_opportunity_node_update($node) {
     static $flag = 0;
     
     # if we have a status change operation pending, perform that now
-    if ($node->type == 'volunteer_opportunity' and $status = drupal_static('opportunity_status_change'))
+    if ($node->type == 'vol_opp' and $status = drupal_static('opportunity_status_change'))
         new Opportunity_Status_Change(
             $node->nid, 
             $status->old, 
