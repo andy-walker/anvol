@@ -38,7 +38,7 @@ function av_volunteer_menu() {
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
         'type'             => MENU_NORMAL_ITEM
     
@@ -50,7 +50,7 @@ function av_volunteer_menu() {
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor'),
         'type'             => MENU_NORMAL_ITEM
     
@@ -62,7 +62,7 @@ function av_volunteer_menu() {
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Regional Controller'),
         'type'             => MENU_NORMAL_ITEM
     
@@ -74,7 +74,7 @@ function av_volunteer_menu() {
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep'),
         'type'             => MENU_NORMAL_ITEM
     
@@ -85,7 +85,7 @@ function av_volunteer_menu() {
         'title'            => 'Contact',
         'type'             => MENU_DEFAULT_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_contact_tab'),
@@ -98,7 +98,7 @@ function av_volunteer_menu() {
         'title'            => 'Contact',
         'type'             => MENU_DEFAULT_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_contact_tab'),
@@ -111,7 +111,7 @@ function av_volunteer_menu() {
         'title'            => 'Contact',
         'type'             => MENU_DEFAULT_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor', 'Regional Controller'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_contact_tab'),
@@ -124,7 +124,7 @@ function av_volunteer_menu() {
         'title'            => 'Contact',
         'type'             => MENU_DEFAULT_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_contact_tab'),
@@ -137,7 +137,7 @@ function av_volunteer_menu() {
         'title'            => 'Details',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_details_tab'),
@@ -150,8 +150,21 @@ function av_volunteer_menu() {
         'title'            => 'Details',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep'),
+        'page callback'    => 'drupal_get_form',
+        'page arguments'   => array('av_volunteer_my_profile_details_tab'),
+        'weight'           => 2
+    
+    );
+
+    $items['regional-controller/my-profile/details'] = array(
+    
+        'title'            => 'Details',
+        'type'             => MENU_LOCAL_TASK,
+        'file'             => 'form.my-profile.inc',
+        'access callback'  => 'av_role_has_roles',
+        'access arguments' => array('Regional Controller'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_details_tab'),
         'weight'           => 2
@@ -163,7 +176,7 @@ function av_volunteer_menu() {
         'title'            => 'Skills',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Assessor'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_skills_tab'),
@@ -176,7 +189,7 @@ function av_volunteer_menu() {
         'title'            => 'References',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Assessor'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_references_tab'),
@@ -189,7 +202,7 @@ function av_volunteer_menu() {
         'title'            => 'Password',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_password_tab'),
@@ -202,7 +215,7 @@ function av_volunteer_menu() {
         'title'            => 'Password',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_password_tab'),
@@ -215,7 +228,7 @@ function av_volunteer_menu() {
         'title'            => 'Password',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor', 'Regional Controller'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_password_tab'),
@@ -228,7 +241,7 @@ function av_volunteer_menu() {
         'title'            => 'Password',
         'type'             => MENU_LOCAL_TASK,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => '_av_volunteer_is_a',
+        'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_password_tab'),
@@ -496,7 +509,7 @@ function _av_volunteer_get_skills() {
     # fill final arrays - these are keyed by tid, but we're using the questionable practice
     # of prepending an underscore to force a string cast, so they remain in the order we insert 
     # them into the array in - we need the underscore anyway in the template we'll eventually use
-    # this in.
+    # this in .. but it's admittedly a slightly dodgy hack
 
     foreach ($top_level as $key => $value) {
         $new_key = explode('-', $key);
@@ -514,6 +527,44 @@ function _av_volunteer_get_skills() {
 
     return $skills;
     
+}
+
+/**
+ * Return 'Regions' taxonomy as a hierarchical list - also return top level items, so they can
+ * be styled / disabled.
+ * @return StdClass object containing the arrays 'terms' and 'parents'
+ */
+function _av_volunteer_get_regions() {
+
+    $taxonomy = (object)array(
+        'terms'   => array(), 
+        'parents' => array()
+    );
+
+    $terms = taxonomy_get_tree(3);
+
+    # first pass, populate $taxonomy->parents with the parent items
+    foreach ($terms as $term)
+        if (!reset($term->parents))
+            $taxonomy->parents[$term->name] = (string)$term->tid;
+
+    # sort alphabetically
+    ksort($taxonomy->parents);
+
+    # 2nd pass - iterate over parents
+    foreach ($taxonomy->parents as $parent_name => $parent_tid) {
+        # add parent to terms array
+        $taxonomy->terms[(string)$parent_tid] = $parent_name;
+        # add children to terms array, so they appear underneath in the list
+        foreach ($terms as $term)
+            if (in_array($parent_tid, $term->parents))
+                $taxonomy->terms[(string)$term->tid] = '- ' . $term->name;
+
+    }
+
+    $taxonomy->parents = array_flip($taxonomy->parents);
+    return $taxonomy;
+
 }
 
 # use av_role_has_roles() instead if possible

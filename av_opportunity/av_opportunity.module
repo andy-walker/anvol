@@ -13,7 +13,7 @@
 function av_opportunity_comment_insert($comment) {
     # hack to force computed field for 'Time spent' on Volunteer Opportunity nodes to update, 
     # whenever a comment is saved - loading the node and saving it should accomplish that.
-    if ($node = node_load($comment->nid) and $node->type == 'vol_opp')
+    if ($node = node_load($comment->nid) and $node->type == 'opportunity')
         node_save($node);
 }
 
@@ -24,9 +24,29 @@ function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
 
     switch ($form_id) {
         
-        # remove breadcrumb on following form, as per client request
-        case 'vol_opp_node_form':
+        # 'Opportunity' edit form
+        case 'opportunity_node_form':
+
+            # remove breadcrumb as per client request
             drupal_set_breadcrumb('');
+
+            # add javascript to format taxonomy list
+            drupal_add_js("
+                
+                jQuery(function() {
+                    jQuery('#edit-field-opportunity-region-und option').each(function() {
+                        if (!jQuery(this).html().match(/^\-/) && jQuery(this).val() != '_none')
+                            jQuery(this).attr('disabled', 'disabled');
+                    });
+                    jQuery('#edit-field-opportunity-region-und option[value=\"_none\"]').html('Any');
+                });
+
+            ", array(
+                  'type'  => 'inline',
+                  'scope' => 'header'
+               )
+            );
+
             break;
         
         
@@ -49,7 +69,8 @@ function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
             }
  
             break;
-    
+
+   
     }
 
 }
@@ -72,7 +93,7 @@ function av_opportunity_node_presave($node) {
     switch (true) {
         
         # when node is a vol_opp that's being updated, and the status has changed ..
-        case $node->type == 'vol_opp'
+        case $node->type == 'opportunity'
              and isset($node->original) 
              and $node->field_opportunitystate['und'][0]['value'] !=
                  $node->original->field_opportunitystate['und'][0]['value']:
@@ -87,7 +108,7 @@ function av_opportunity_node_presave($node) {
             break;
 
         # when node is a vol_opp that's being updated, and a volunteer has been assigned ..
-        case $node->type == 'vol_opp'
+        case $node->type == 'opportunity'
             and isset($node->original)
             and $node->field_volunteer4opp['und'][0]['uid'] !=
                 $node->original->field_volunteer4opp['und'][0]['uid']:
@@ -107,7 +128,7 @@ function av_opportunity_node_update($node) {
     static $flag = 0;
     
     # if we have a status change operation pending, perform that now
-    if ($node->type == 'vol_opp' and $status = drupal_static('opportunity_status_change'))
+    if ($node->type == 'opportunity' and $status = drupal_static('opportunity_status_change'))
         new Opportunity_Status_Change(
             $node->nid, 
             $status->old, 
@@ -115,7 +136,7 @@ function av_opportunity_node_update($node) {
         );
 
     # create a relationship on assigned volunteer to the Charity
-    if($node->type == 'vol_opp' and isset($node->field_volunteer4opp['und'][0]['uid']) and !$flag++) {
+    if($node->type == 'opportunity' and isset($node->field_volunteer4opp['und'][0]['uid']) and !$flag++) {
 
         civicrm_initialize();
 

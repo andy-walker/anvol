@@ -39,18 +39,20 @@ function _av_role_get_role_map() {
     
     # resolve internal role names to rids
     static $role_map = array(
-        'anonymous user'       => 1, 
-        'AbilityNet HR'        => 12,
-        'website admin'        => 4,
-        'Website editor'       => 5,
-        'Individual Volunteer' => 7,
-        'Company Volunteer'    => 8,
-        'authenticated user'   => 2,
-        'IT4C Administrator'   => 3,
-        'Charity Rep'          => 9,
-        'Analyst'              => 10,
-        'Assessor'             => 10,
-        'Company Rep'          => 11
+        'anonymous user'        => 1, 
+        'AbilityNet HR'         => 12,
+        'website admin'         => 4,
+        'Website editor'        => 5,
+        'Individual Volunteer'  => 7,
+        'Company Volunteer'     => 8,
+        'authenticated user'    => 2,
+        'IT4C Administrator'    => 3,
+        'Charity Rep'           => 9,
+        'Analyst'               => 10,
+        'Assessor'              => 10,
+        'Company Rep'           => 11,
+        'Regional Controller'   => 14,
+        'Regional Co-ordinator' => 14
     );
     
     return $role_map;

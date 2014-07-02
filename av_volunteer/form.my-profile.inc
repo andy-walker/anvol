@@ -29,13 +29,13 @@ function av_volunteer_my_profile($form, $form_state) {
         'sun' => ''
     );
 
-if (av_role_has_roles('Individual Volunteer', 'website admin')) {
-    $form['volunteer_id'] = array(
-        '#type'   => 'item',
-        '#title'  => t('Volunteer ID') . ':',
-        '#markup' => $contactID['id']
-    );
-}
+    if (av_role_has_roles('Individual Volunteer', 'website admin')) {
+        $form['volunteer_id'] = array(
+            '#type'   => 'item',
+            '#title'  => t('Volunteer ID') . ':',
+            '#markup' => $contactID['id']
+        );
+    }
 
     $form['signup_date'] = array(
         '#type'   => 'item',
@@ -65,7 +65,7 @@ if (av_role_has_roles('Individual Volunteer', 'website admin')) {
         '#size'  => 31
     );
 
-    if (_av_volunteer_is_a('Individual Volunteer')) {
+    if (av_role_has_roles('Individual Volunteer')) {
 
         $form['known_as'] = array(
             '#type'  => 'textfield',
@@ -81,7 +81,7 @@ if (av_role_has_roles('Individual Volunteer', 'website admin')) {
         '#size'  => 70
     );
 
-    if (_av_volunteer_is_a('Charity Rep', 'Company Rep')) {
+    if (av_role_has_roles('Charity Rep', 'Company Rep')) {
 
         $form['city'] = array(
             '#type'  => 'textfield',
@@ -128,7 +128,7 @@ if (av_role_has_roles('Individual Volunteer', 'website admin')) {
     );
 
     # status - relevant to Individual Volunteer only
-    if (_av_volunteer_is_a('Individual Volunteer', 'website admin', 'Assessor')) {
+    if (av_role_has_roles('Individual Volunteer', 'website admin', 'Assessor')) {
 
         $form['status'] = array(
             '#type'          => 'radios',
@@ -136,7 +136,7 @@ if (av_role_has_roles('Individual Volunteer', 'website admin')) {
             '#default_value' => 1,
             '#options'       => (
                 # volunteer only sees Available / Unavailable, admin / assessor sees all statuses
-                _av_volunteer_is_a('website admin', 'Assessor') ? array(
+                av_role_has_roles('website admin', 'Assessor') ? array(
                     1 => t('Potential'),
                     2 => t('Available'),
                     3 => t('Cancelled'),
@@ -152,7 +152,7 @@ if (av_role_has_roles('Individual Volunteer', 'website admin')) {
     }
 
     # best time to contact - Individual Volunteer and Client Rep
-    if (_av_volunteer_is_a('Individual Volunteer', 'Company Rep', 'website admin', 'Assessor')) {
+    if (av_role_has_roles('Individual Volunteer', 'Company Rep', 'website admin', 'Assessor')) {
 
         $form['best_time_pre'] = array(
             '#markup' => '<div class="best-time-label">' . t('Your Availability') . '</div>' . "\n"
@@ -211,6 +211,10 @@ function av_volunteer_my_profile_details_tab($form, $form_state) {
     if (av_role_has_roles('Charity Rep'))
         return av_volunteer_my_profile_details_tab_charity($form, $form_state);
 
+    # likewise for regional co-ordinators, show them a different form too
+    elseif (av_role_has_roles('Regional Co-ordinator'))
+        return av_volunteer_my_profile_details_tab_regional_coordinator($form, $form_state);
+
     $yes_no = array(
         'yes' => t('Yes'),
         'no'  => t('No')
@@ -245,13 +249,13 @@ function av_volunteer_my_profile_details_tab($form, $form_state) {
             '#title'   => t('Email Opportunities')
         ),
 
-        'share_details'    => array(
-            '#type'        => 'radios',
-            '#options'     => array(
-                    0 => t('Brief Details'),
-                    1 => t('Full Details')
-                ),
-            '#title'       => t('Share Details')
+        'share_details' => array(
+            '#type'    => 'radios',
+            '#title'   => t('Share Details'),
+            '#options' => array(
+                0 => t('Brief Details'),
+                1 => t('Full Details')
+            ),
         ),
 
         'where_you_hear' => array(
@@ -415,6 +419,40 @@ function av_volunteer_my_profile_details_tab_charity($form, $form_state) {
 
 }
 
+function av_volunteer_my_profile_details_tab_regional_coordinator($form, $form_state) {
+
+    drupal_add_js("
+        
+        jQuery(function() {
+            jQuery('#edit-region option').each(function() {
+                if (!jQuery(this).html().match(/^\-/) && jQuery(this).val() != '0')
+                    jQuery(this).attr('disabled', 'disabled');
+            });
+        });
+
+    ", array(
+          'type'  => 'inline',
+          'scope' => 'header'
+       )
+    );
+
+    $taxonomy = _av_volunteer_get_regions();
+
+    $form['region'] = array(
+        '#type'    => 'select',
+        '#title'   => t('Region'),
+        '#options' => array(0 => 'Any') + $taxonomy->terms
+    );
+
+    $form['submit'] = array(
+        '#type'  => 'submit',
+        '#value' => t('Save')
+    );
+
+    return $form;
+
+}
+
 function av_volunteer_my_profile_skills_tab($form, $form_state) {
 
     module_load_include('inc', 'av_volunteer', 'av_volunteer.settings');
@@ -523,20 +561,15 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
     drupal_add_css(drupal_get_path('module', 'av_volunteer') . '/css/base.css');
 
     $num_references = 2;
+    $numbers        = array('One', 'Two', 'Three', 'Four');
 
     foreach (range(0, --$num_references) as $index) {
 
-    if($index == 0)
-        $num = 'One';
-
-    if($index == 1)
-        $num = 'Two';
-
-    $form['reference_' . $index] = array(
-        '#type'        => 'fieldset',
-        '#title'       => 'Reference ' . $num,
-        '#description' => t('(Please provide two references)')
-    );
+        $form['reference_' . $index] = array(
+            '#type'        => 'fieldset',
+            '#title'       => t('Reference @index', array('@index' => $numbers[$index])),
+            '#description' => t('(Please provide two references)')
+        );
         
         $form['reference_' . $index]['reference_name' . $index] = array(
             '#type'  => 'textfield',
