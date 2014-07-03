@@ -115,6 +115,12 @@ function av_volunteer_my_profile($form, $form_state) {
         '#size'  => 31
     );
 
+    $form['alternative_phone_number'] = array(
+        '#type'  => 'textfield',
+        '#title' => t('Alternative Phone Number'),
+        '#size'  => 31
+    );
+
     $form['mobile_number'] = array(
         '#type'  => 'textfield',
         '#title' => t('Mobile Number'),
@@ -128,7 +134,7 @@ function av_volunteer_my_profile($form, $form_state) {
     );
 
     # status - relevant to Individual Volunteer only
-    if (av_role_has_roles('Individual Volunteer', 'website admin', 'Assessor')) {
+    if (av_role_has_roles('Individual Volunteer', 'website admin')) {
 
         $form['status'] = array(
             '#type'          => 'radios',
@@ -136,7 +142,7 @@ function av_volunteer_my_profile($form, $form_state) {
             '#default_value' => 1,
             '#options'       => (
                 # volunteer only sees Available / Unavailable, admin / assessor sees all statuses
-                av_role_has_roles('website admin', 'Assessor') ? array(
+                av_role_has_roles('website admin') ? array(
                     1 => t('Potential'),
                     2 => t('Available'),
                     3 => t('Cancelled'),
@@ -152,7 +158,7 @@ function av_volunteer_my_profile($form, $form_state) {
     }
 
     # best time to contact - Individual Volunteer and Client Rep
-    if (av_role_has_roles('Individual Volunteer', 'Company Rep', 'website admin', 'Assessor')) {
+    if (av_role_has_roles('Individual Volunteer', 'Company Rep', 'website admin')) {
 
         $form['best_time_pre'] = array(
             '#markup' => '<div class="best-time-label">' . t('Your Availability') . '</div>' . "\n"
@@ -331,34 +337,17 @@ function av_volunteer_my_profile_details_tab_charity($form, $form_state) {
             '#markup' => $contactID['id']
         ),
 
-        'work_type' => array(
-            '#type'    => 'checkboxes',
-            '#title'   => ' ',
-            '#options' => array(
-                1 => t('I want to help disabled people at home'),
-                2 => t('I want to help charities')
-            )
+        'charity_name' => array(
+            '#type'   => 'item',
+            '#title'  => t('Charity Name') . ':',
+            '#markup' => '&lt;charity name&gt;'
         ),
-    
+
+
         'monthly_newsletter' => array(
             '#type'    => 'radios',
             '#options' => $yes_no,
             '#title'   => t('Monthly Newsletter')
-        ),
-
-        'email_opportunities' => array(
-            '#type'    => 'radios',
-            '#options' => $yes_no,
-            '#title'   => t('Email Opportunities')
-        ),
-
-        'share_details' => array(
-            '#type'    => 'radios',
-            '#options' => array(
-                    0 => t('Brief Details'),
-                    1 => t('Full Details')
-                ),
-            '#title'   => t('Share Details')
         ),
 
         'charity_type' => array(
