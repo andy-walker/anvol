@@ -26,6 +26,21 @@ function av_volunteer_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
+ * Implementation of hook_init
+ */
+function av_volunteer_init() {
+    
+    # register data model autoloader
+    spl_autoload_register(function($class) {
+        if (strstr($class, '_Data'))
+            module_load_include('php', 'av_volunteer', 
+                'models/' . strtolower(strtr($class, '_', '.'))
+            );
+    }); 
+
+}
+
+/**
  * Implementation of hook_menu
  */
 function av_volunteer_menu() {
@@ -454,25 +469,6 @@ function av_volunteer_theme($existing, $type, $theme, $path) {
 }
 
 /**
- * Helper function to retrieve an array of uk counties from CiviCRM
- * @return array of counties keyed by state_province_id
- */
-function _av_volunteer_get_counties() {
-    
-    civicrm_initialize();
-    $counties = array();
-
-    $dao = CRM_Core_DAO::executeQuery("
-        SELECT id, name FROM civicrm_state_province WHERE country_id = 1226
-    ");
-    while ($dao->fetch())
-        $counties[$dao->id] = $dao->name;
-
-    return $counties;
-
-}
-
-/**
  * Helper function to retrieve hierarchical skills list from 'volunteer_skills' vocabulary
  * sorting by weight
  * @return StdClass containing two arrays (top-level items, sub-items)
@@ -575,9 +571,9 @@ function _av_volunteer_is_supervisor($user) {
 /**
  * Access callback to check user roles - made more sense to implement role-based logic in code,
  * otherwise we'd have had to create a ton of different permissions
- * @param  multiple (string)
+ * @param  string  roles to check 
  * @return bool
- * @deprecated - use av_role_has_roles instead
+ * @deprecated use av_role_has_roles instead
  */
 function _av_volunteer_is_a() {
     global $user;
