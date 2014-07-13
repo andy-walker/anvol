@@ -289,63 +289,54 @@ function av_volunteer_my_profile_details_tab($form_state) {
     $data = new My_Profile_Details_Data($user->uid);
 
     $yes_no = array(
-        'yes' => t('Yes'),
-        'no'  => t('No')
+        '1' => t('Yes'),
+        '0' => t('No')
     );
 
-    $options = array(0 => t('Select ...')) + $data->getOptions('where_did_you_hear_about_us__20140611140531');
+    $where_hear_options = array(0 => t('Select ...')) + $data->getOptions('where_did_you_hear_about_us__20140611140531');
 
     $form = array(
 
         'work_type' => array(
-            '#type'    => 'checkboxes',
-            '#title'   => ' ',
-            '#options' => array(
-                1 => t('I want to help disabled people at home'),
-                2 => t('I want to help charities')
-            )
+            '#type'          => 'checkboxes',
+            '#title'         => ' ',
+            '#options'       => $data->getOptions('type_of_assistance_20140713170230'),
+            '#default_value' => isset($data->contact['assistance_type']) ? $data->contact['assistance_type'] : ''
         ),
     
         'monthly_newsletter' => array(
             '#type'          => 'radios',
             '#options'       => $yes_no,
             '#title'         => t('Newsletter'),
-            '#default_value' => 'yes'
+            '#default_value' => isset($data->contact['newsletter']) ? $data->contact['newsletter'] : 1
         ),
 
         'email_opportunities' => array(
             '#type'           => 'radios',
             '#options'        => $yes_no,
             '#title'          => t('Email Opportunities'),
-            '#default_value'  => 'yes'
+            '#default_value'  => isset($data->contact['email_opps']) ? $data->contact['email_opps'] : 1
         ),
 
         'share_details' => array(
             '#type'     => 'radios',
             '#title'    => t('Share Details'),
-            '#options'  => array(
-                0 => t('Brief Details (Name and email)'),
-                1 => t('Full Details (Name, email, phone and CV)')
-            ),
-            '#default_value'  => '1'
+            '#options'       => $data->getOptions('sharing_details_20120112174737'),
+            '#default_value' => isset($data->contact['sharing']) ? $data->contact['sharing'] : 'Full details'
         ),
 
         'where_you_hear' => array(
             '#type'          => 'select',
             '#title'         => t('Where did you hear about us?'),
             '#options'       => $where_hear_options,
-            '#default_value' => isset($data->contact['where_you_hear']) ? $data->contact['where_you_hear'] : 0     
+            '#default_value' => isset($data->contact['where_hear_volunteer']) ? $data->contact['where_hear_volunteer'] : 0     
         ),
 
         'why_you_want_do_this' => array(
-            '#type'  => 'textarea',
-            '#title' => t('Why do you want to volunteer with us?')
+            '#type'          => 'textarea',
+            '#title'         => t('Why do you want to volunteer with us?'),
+            '#default_value' => isset($data->contact['reason']) ? $data->contact['reason'] : ''
         ),
-
-        /*'comment' => array(
-            '#type'  => 'textarea',
-            '#title' => t('Comment')
-        ),*/
 
         'submit' => array(
             '#type'  => 'submit',
@@ -354,9 +345,36 @@ function av_volunteer_my_profile_details_tab($form_state) {
 
     );
 
+    $form['#submit'][] = 'av_volunteer_my_profile_details_form_submit';
+
     return $form;
 
 }
+
+function av_volunteer_my_profile_details_form_submit($form, &$form_state) {
+
+    watchdog('andyw', 'running volunteer details submit handler');
+
+    global $user;
+    $data = new My_Profile_Details_Data($user->uid);
+
+    $data->contact['newsletter']           = $form_state['values']['monthly_newsletter'];
+    $data->contact['email_opps']           = $form_state['values']['email_opportunities'];
+    $data->contact['reason']               = $form_state['values']['why_you_want_do_this'];
+    $data->contact['where_hear_volunteer'] = $form_state['values']['where_you_hear'];
+    $data->contact['sharing']              = $form_state['values']['share_details'];
+    $data->contact['assistance_type']      = $form_state['values']['work_type'];
+
+    if ($data->save()) {
+        drupal_set_message(t('Details saved!'));
+        return;
+    }
+
+    # more descriptive error will be posted to the watchdog
+    drupal_set_message(t('There was a problem saving your details. Please contact the site administrator.'), 'error');   
+
+}
+
 
 function av_volunteer_my_profile_details_tab_charity($form_state) {
     
@@ -377,13 +395,13 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
         'charity_id' => array(
             '#type'   => 'item',
             '#title'  => t('Charity ID') . ':',
-            '#markup' => $data->contact['id']
+            '#markup' => isset($data->charity['id']) ? $data->charity['id'] : ''
         ),
 
         'charity_name' => array(
             '#type'   => 'item',
             '#title'  => t('Charity Name') . ':',
-            '#markup' => '&lt;charity name&gt;'
+            '#markup' => isset($data->charity['organization_name']) ? $data->charity['organization_name'] : ''
         ),
 
         'monthly_newsletter' => array(
@@ -393,31 +411,32 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
         ),
 
         'charity_type' => array(
-            '#type'     => 'select',
-            '#multiple' => true,
-            '#title'    => t('Type'),
-            '#size'     => 5,
-            '#options'  => $data->getOptions('charity_type_20120112173143')
+            '#type'          => 'select',
+            '#multiple'      => true,
+            '#title'         => t('Type'),
+            '#size'          => 5,
+            '#options'       => $data->getOptions('charity_type_20120112173143'),
+            '#default_value' => isset($data->charity['charity_type']) ? $data->charity['charity_type'] : array()
         ),
 
         'charity_no' => array(
             '#type'          => 'textfield',
             '#title'         => t('Registered Charity Number'),
             '#size'          => 31,
-            '#default_value' => isset($data->contact['charity_no']) ? $data->contact['charity_no'] : ''
+            '#default_value' => isset($data->charity['charity_no']) ? $data->charity['charity_no'] : ''
         ),
 
         'charity_description' => array(
             '#type'          => 'textarea',
             '#title'         => t('Description of Charity'),
-            '#default_value' => isset($data->contact['charity_desc']) ? $data->contact['charity_desc'] : ''
+            '#default_value' => isset($data->charity['charity_desc']) ? $data->charity['charity_desc'] : ''
         ),
 
         'where_you_hear' => array(
             '#type'          => 'select',
             '#title'         => t('Where did you hear about us?'),
             '#options'       => $where_hear_options,
-            '#default_value' => isset($data->contact['where_you_hear']) ? $data->contact['where_you_hear'] : 0
+            '#default_value' => isset($data->charity['where_hear_charity']) ? $data->charity['where_hear_charity'] : 0
         ),
 
         'submit' => array(
@@ -427,34 +446,40 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
 
     );
 
-    $form['#submit'][] = 'av_volunteer_my_profile_details_form_submit';
+    $form['#submit'][] = 'av_volunteer_my_profile_details_charity_form_submit';
 
     return $form;
 
 }
 
-function av_volunteer_my_profile_details_form_submit($form, &$form_state) {
+function av_volunteer_my_profile_details_charity_form_submit($form, &$form_state) {
 
     watchdog('andyw', 'running details submit handler');
 
     global $user;
     $data = new My_Profile_Details_Data($user->uid);
 
-    $data->contact['charity_no']     = $form_state['values']['charity_no'];
-    $data->contact['charity_desc']   = $form_state['values']['charity_description'];
-    $data->contact['umbrella']       = $form_state['values']['umbrella'];
-    $data->contact['where_you_hear'] = $form_state['values']['where_you_hear'];
+    $data->charity['charity_type']       = $form_state['values']['charity_type'];
+    $data->charity['charity_no']         = $form_state['values']['charity_no'];
+    $data->charity['charity_desc']       = $form_state['values']['charity_description'];
+    $data->charity['where_hear_charity'] = $form_state['values']['where_you_hear'];
 
     if ($data->save()) {
         drupal_set_message(t('Details saved!'));
         return;
     }
 
+    # more descriptive error will be posted to the watchdog
     drupal_set_message(t('There was a problem saving your details. Please contact the site administrator.'), 'error');   
 
 }
 
-function av_volunteer_my_profile_details_tab_regional_coordinator($form, $form_state) {
+function av_volunteer_my_profile_details_tab_regional_coordinator($form_state) {
+
+    civicrm_initialize();
+
+    global $user;
+    $data = new My_Profile_Details_Data($user->uid);
 
     drupal_add_js("
         
@@ -474,9 +499,10 @@ function av_volunteer_my_profile_details_tab_regional_coordinator($form, $form_s
     $taxonomy = _av_volunteer_get_regions();
 
     $form['region'] = array(
-        '#type'    => 'select',
-        '#title'   => t('Region'),
-        '#options' => array(0 => 'Any') + $taxonomy->terms
+        '#type'          => 'select',
+        '#title'         => t('Region'),
+        '#options'       => array(0 => 'Any') + $taxonomy->terms,
+        '#default_value' => isset($data->contact['region']) ? $data->contact['region'] : 0 
     );
 
     $form['submit'] = array(
@@ -484,11 +510,37 @@ function av_volunteer_my_profile_details_tab_regional_coordinator($form, $form_s
         '#value' => t('Save')
     );
 
+    $form['#submit'][] = 'av_volunteer_my_profile_details_regional_coordinator_form_submit';
+
     return $form;
 
 }
 
+function av_volunteer_my_profile_details_regional_coordinator_form_submit($form, $form_state) {
+
+    civicrm_initialize();
+
+    global $user;
+    $data = new My_Profile_Details_Data($user->uid);
+
+    $data->contact['region'] = $form_state['values']['region'];
+
+    if ($data->save()) {
+        drupal_set_message(t('Details saved!'));
+        return;
+    }
+
+    # more descriptive error will be posted to the watchdog
+    drupal_set_message(t('There was a problem saving your details. Please contact the site administrator.'), 'error');  
+
+}
+
 function av_volunteer_my_profile_skills_tab($form, $form_state) {
+
+    civicrm_initialize();
+
+    global $user;
+    $data = new My_Profile_Skills_Data($user->uid);
 
     module_load_include('inc', 'av_volunteer', 'av_volunteer.settings');
 
@@ -515,15 +567,10 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
     $form += array(
         
         'achievement_level' => array(
-            '#type'    => 'radios',
-            '#title'   => t('Highest level of academic achievement'),
-            '#options' => array(
-                1 => t('Doctorates'),
-                2 => t('Masters degrees, postgraduate certificates and diplomas'),
-                3 => t('Bachelor degrees, graduate certificates and diplomas'),
-                4 => t('Diplomas of higher education and further education, foundation degrees and higher national diplomas'),
-                5 => t('Certificates of higher education')
-            )
+            '#type'          => 'radios',
+            '#title'         => t('Highest level of academic achievement'),
+            '#options'       => $data->getOptions('level_of_qualification_20140611134004'),
+            '#default_value' => isset($data->contact['level_of_qualification']) ? $data->contact['level_of_qualification'] : ''
         ),
 
         'skills' => array(
@@ -587,11 +634,42 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
         '#title' => t('Upload CV')
     );
 
+    $form['submit'] = array(
+        '#type'  => 'submit',
+        '#value' => t('Save')
+    );
+
+    $form['#submit'][] = 'av_volunteer_my_profile_skills_form_submit';
+
     return $form;
 
 }
 
+function av_volunteer_my_profile_skills_form_submit($form, $form_state) {
+
+    civicrm_initialize();
+
+    global $user;
+    $data = new My_Profile_Skills_Data($user->uid);
+
+    $data->contact['level_of_qualification'] = $form_state['values']['achievement_level'];
+
+    if ($data->save()) {
+        drupal_set_message(t('Details saved!'));
+        return;
+    }
+
+    # more descriptive error will be posted to the watchdog
+    drupal_set_message(t('There was a problem saving your details. Please contact the site administrator.'), 'error');     
+
+}
+
 function av_volunteer_my_profile_references_tab($form, $form_state) {
+
+    civicrm_initialize();
+
+    global $user;
+    $data = new My_Profile_Reference_Data($user->uid);
 
     drupal_add_css(drupal_get_path('module', 'av_volunteer') . '/css/base.css');
 
@@ -600,6 +678,8 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
 
     foreach (range(0, --$num_references) as $index) {
 
+        $number = $index + 1;
+
         $form['reference_' . $index] = array(
             '#type'        => 'fieldset',
             '#title'       => t('Reference @index', array('@index' => $numbers[$index])),
@@ -607,21 +687,24 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
         );
         
         $form['reference_' . $index]['reference_name' . $index] = array(
-            '#type'  => 'textfield',
-            '#title' => t('Reference Name'),
-            '#size'  => 40
+            '#type'          => 'textfield',
+            '#title'         => t('Reference Name'),
+            '#size'          => 40,
+            '#default_value' => isset($data->contact["reference{$number}_name"]) ? $data->contact["reference{$number}_name"] : ''
         );        
         
         $form['reference_' . $index]['reference_phone' . $index] = array(
-            '#type'  => 'textfield',
-            '#title' => t('Phone No'),
-            '#size'  => 21
+            '#type'          => 'textfield',
+            '#title'         => t('Phone No'),
+            '#size'          => 21,
+            '#default_value' => isset($data->contact["reference{$number}_phone"]) ? $data->contact["reference{$number}_phone"] : ''
         );
 
         $form['reference_' . $index]['reference_address' . $index] = array(
             '#type'  => 'textfield',
             '#title' => t('Reference Address'),
-            '#size'  => 70
+            '#size'  => 70,
+            '#default_value' => isset($data->contact["reference{$number}_address"]) ? $data->contact["reference{$number}_address"] : ''
         );      
 
         if (av_role_has_roles('website admin', 'Assessor'))
@@ -686,12 +769,39 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
         '#value' => t('Save')
     );
 
+    $form['#submit'][] = 'av_volunteer_my_profile_references_form_submit';
+
     return $form;
+}
+
+function av_volunteer_my_profile_references_form_submit($form, $form_state) {
+
+    civicrm_initialize();
+
+    global $user;
+    $data = new My_Profile_Reference_Data($user->uid);
+
+    $data->contact['reference1_name']    = $form_state['values']['reference_name0'];
+    $data->contact['reference1_address'] = $form_state['values']['reference_address0'];
+    $data->contact['reference1_phone']   = $form_state['values']['reference_phone0'];
+
+    $data->contact['reference2_name']    = $form_state['values']['reference_name1'];
+    $data->contact['reference2_address'] = $form_state['values']['reference_address1'];
+    $data->contact['reference2_phone']   = $form_state['values']['reference_phone1'];
+
+    if ($data->save()) {
+        drupal_set_message(t('Details saved!'));
+        return;
+    }
+
+    # more descriptive error will be posted to the watchdog
+    drupal_set_message(t('There was a problem saving your details. Please contact the site administrator.'), 'error');     
+
 }
 
 function av_volunteer_my_profile_password_tab($form, $form_state) {
 
-    return $form + array(
+    $form = array(
         
         'old_password' => array(
             '#type'  => 'password',
@@ -702,10 +812,39 @@ function av_volunteer_my_profile_password_tab($form, $form_state) {
         'confirm_password' => array('#type' => 'password_confirm'),
 
         'submit' => array(
-            '#type'  => 'submit',
-            '#value' => t('Save')
+            '#type'     => 'submit',
+            '#value'    => t('Save'),
+            '#validate' => array('av_volunteer_my_profile_password_form_validate')
         )
     
     );
+
+    $form['#submit'][] = 'av_volunteer_my_profile_password_form_submit';
+
+    return $form;
+
+}
+
+function av_volunteer_my_profile_password_form_validate($form, $form_state) {
+
+    global $user;
+    if (!user_authenticate($user->name, $form_state['values']['old_password']))
+        form_set_error('old_password', t("Old password is invalid"));
+
+}
+
+function av_volunteer_my_profile_password_form_submit($form, $form_state) {
+
+    require_once './includes/password.inc';
+    global $user;
+
+    db_update('users')
+        ->fields(array(
+            'pass' => user_hash_password($form_state['values']['confirm_password'])
+        ))
+        ->condition('uid', $user->uid)
+        ->execute();
+
+    drupal_set_message(t('Password updated!'));
 
 }

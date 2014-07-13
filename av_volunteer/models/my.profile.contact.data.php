@@ -182,8 +182,6 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
         # create Civi keys from friendly custom data keys
         $this->createCiviKeys($this->contact);
 
-        $this->log('contact', $this->contact);
-
         # save contact details
         try {
             civicrm_api3('contact', 'create', $this->contact);

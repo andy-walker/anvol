@@ -53,7 +53,8 @@ function _av_role_get_role_map() {
         'Company Rep'           => 11,
         'Client Rep'            => 11,
         'Regional Controller'   => 14,
-        'Regional Co-ordinator' => 14
+        'Regional Co-ordinator' => 14,
+        'Regional Coordinator'  => 14
     );
     
     return $role_map;
