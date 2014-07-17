@@ -404,12 +404,6 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
             '#markup' => isset($data->charity['organization_name']) ? $data->charity['organization_name'] : ''
         ),
 
-        'monthly_newsletter' => array(
-            '#type'          => 'radios',
-            '#options'       => $yes_no,
-            '#title'         => t('Monthly Newsletter'),
-        ),
-
         'charity_type' => array(
             '#type'          => 'select',
             '#multiple'      => true,

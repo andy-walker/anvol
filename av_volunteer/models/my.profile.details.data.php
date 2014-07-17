@@ -270,6 +270,8 @@ class My_Profile_Details_Data extends Volunteer_Abstract_Data_Model {
                     $custom['region'] => $this->contact['region']
                 );
 
+                # api currently not able to update 'View only' fields
+                # (yay! - go api!), but this will do it ..
                 CRM_Core_BAO_CustomValueTable::setValues($params);
                 $success = true;
 
