@@ -371,15 +371,74 @@ function av_volunteer_menu() {
 		'weight'           => 3
 	);
 
-    # 'All Opportunities' renamed 'Search Opportunities' as per AN request
-    $items['volunteer/opportunities/search'] = array(
-        'title'            => t('Search Opportunities'),
-        'page callback'    => 'views_embed_view',
-        'page arguments'   => array('admin_opportunities_view'),
-        'access callback'  => true,
-        'type'             => MENU_LOCAL_TASK,
-        'weight'           => 4
-    );
+       # 'All Opportunities' renamed 'Search Opportunities' as per AN request
+        $items['volunteer/opportunities/searchchar'] = array(
+            'title'            => t('Search Opportunities'),
+            'page callback'    => 'views_embed_view',
+            'page arguments'   => array('admin_opportunities_view','page'),
+            'access callback'  => true,
+            'type'             => MENU_LOCAL_TASK,
+            'weight'           => 4
+        );
+        
+         # 'All Opportunities' renamed 'Search Opportunities' as per AN request
+    	$items['volunteer/opportunities/searchdbs'] = array(
+    	    'title'            => t('Search Opportunities With Individuals'),
+    	    'page callback'    => 'views_embed_view',
+    	    'page arguments'   => array('admin_opportunities_view','page_2'),
+    	    'access callback'  => 'av_role_has_roles',
+           	    'access arguments' => array('website admin','Vounteer with DBS'),
+    	    'type'             => MENU_LOCAL_TASK,
+    	    'weight'           => 5
+    	);
+    	
+    	
+         #Admin Panel changes
+        $items['administrator/adminpanel'] = array(
+            'title'            => t('Admin Panel'),
+            'page callback'    => 'views_embed_view',
+            'page arguments'   => array('admin_opportunities_view', 'page_1'),
+            'access callback'  => true,
+            'type'             => MENU_NORMAL_ITEM
+        );
+       
+        $items['administrator/adminpanel/opportunities'] = array(
+            'title'            => t('Opportunities'),
+            'page callback'    => 'views_embed_view',
+            'page arguments'   => array('admin_opportunities_view', 'page_1'),
+            'access callback'  => true,
+            'type'             => MENU_DEFAULT_LOCAL_TASK,
+            'weight'           => 1
+        );
+        
+      
+        $items['administrator/adminpanel/volunteers'] = array(
+    	'title'            => t('Volunteers'),
+    	'page callback'    => 'views_embed_view',
+    	'page arguments'   => array('volunteer_user_view', 'page_1'),
+    	'access callback'  => true,
+    	'type'             => MENU_LOCAL_TASK,
+    	'weight'           => 2
+         );
+         
+          $items['administrator/adminpanel/charities'] = array(
+         	'title'            => t('Charities'),
+         	'page callback'    => 'views_embed_view',
+         	'page arguments'   => array('volunteer_user_view', 'page_2'),
+         	'access callback'  => true,
+         	'type'             => MENU_LOCAL_TASK,
+         	'weight'           => 3
+         );
+         
+          $items['administrator/adminpanel/clients'] = array(
+         	'title'            => t('Clients'),
+         	'page callback'    => 'views_embed_view',
+         	'page arguments'   => array('volunteer_user_view', 'page_3'),
+         	'access callback'  => true,
+         	'type'             => MENU_LOCAL_TASK,
+         	'weight'           => 4
+         );
+   	 #Admin Panel changes ends	
 
     # volunteer registration form
     $items['volunteer/registration'] = array(
