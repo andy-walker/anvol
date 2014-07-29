@@ -20,7 +20,8 @@ class My_Profile_Skills_Data extends Volunteer_Abstract_Data_Model {
      * @access public
      */
     public $custom_data = array(
-        'level_of_qualification' => 'custom_70'
+        'level_of_qualification' => 'custom_70',
+        'cv'                     => 'custom_95'
     );
 
     /**
@@ -83,6 +84,19 @@ class My_Profile_Skills_Data extends Volunteer_Abstract_Data_Model {
         }
 
         $this->createFriendlyKeys($this->contact);
+
+        # load file info
+        if (isset($this->contact['cv_file_id']) and !empty($this->contact['cv_file_id'])) {
+            try {
+                $this->contact['cv_file'] = civicrm_api3('file', 'getsingle', array('id' => $this->contact['cv']));
+            } catch (CiviCRM_API3_Exception $e) {
+                return $this->error("Error getting cv file metadata for @contact_id: @excuse", array(
+                    '@contact_id' => $this->contact_id,
+                    '@excuse'     => $e->getMessage()
+                ));
+            }
+        }      
+
         $this->log('skills', $this->contact);
 
     }
@@ -105,6 +119,7 @@ class My_Profile_Skills_Data extends Volunteer_Abstract_Data_Model {
         # create Civi keys from friendly custom data keys
         $this->createCiviKeys($this->contact);
         $this->log('saving skills', $this->contact);
+
         # save contact details
         try {
             civicrm_api3('contact', 'create', $this->contact);

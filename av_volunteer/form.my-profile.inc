@@ -176,25 +176,35 @@ function av_volunteer_my_profile($form_state) {
                        . '  </div>' . "\n" 
         );
 
+        if (isset($data->contact['availability']))
+            $best_time = _av_volunteer_convert_availability_from_text(
+                $data->contact['availability']
+            );
+
+        watchdog('andyw', 'best_time = <pre>' . print_r($best_time, true) . '</pre>');
+
         $form['best_time_morning'] = array(
-            '#type'    => 'checkboxes',
-            '#options' => $days,
-            '#prefix'  => '<div class="checkbox-row"><div class="checkbox-cell row-label">Morning</div>',
-            '#suffix'  => '</div>'
+            '#type'          => 'checkboxes',
+            '#options'       => $days,
+            '#prefix'        => '<div class="checkbox-row"><div class="checkbox-cell row-label">Morning</div>',
+            '#suffix'        => '</div>',
+            '#default_value' => isset($best_time['morning']) ? $best_time['morning'] : array()
         );
 
         $form['best_time_afternoon'] = array(
-            '#type'    => 'checkboxes',
-            '#options' => $days,
-            '#prefix'  => '<div class="checkbox-row"><div class="checkbox-cell row-label">Afternoon</div>',
-            '#suffix'  => '</div>'
+            '#type'          => 'checkboxes',
+            '#options'       => $days,
+            '#prefix'        => '<div class="checkbox-row"><div class="checkbox-cell row-label">Afternoon</div>',
+            '#suffix'        => '</div>',
+            '#default_value' => isset($best_time['afternoon']) ? $best_time['afternoon'] : array()
         );
 
         $form['best_time_evening'] = array(
-            '#type'    => 'checkboxes',
-            '#options' => $days,
-            '#prefix'  => '<div class="checkbox-row"><div class="checkbox-cell row-label">Evening</div>',
-            '#suffix'  => '</div>'
+            '#type'          => 'checkboxes',
+            '#options'       => $days,
+            '#prefix'        => '<div class="checkbox-row"><div class="checkbox-cell row-label">Evening</div>',
+            '#suffix'        => '</div>',
+            '#default_value' => isset($best_time['evening']) ? $best_time['evening'] : array()
         );
 
         $form['best_time_post'] = array(
@@ -243,7 +253,9 @@ function av_volunteer_my_profile_form_validate($form, &$form_state) {
  * Form submit handler for My Profile -> Contact form
  */
 function av_volunteer_my_profile_form_submit($form, &$form_state) {
-    
+
+    watchdog('andyw', 'form_state[values] = <pre>' . print_r($form_state['values'], true) . '</pre>');
+   
     global $user;
     $data = new My_Profile_Contact_Data($user->uid);
 
@@ -263,6 +275,12 @@ function av_volunteer_my_profile_form_submit($form, &$form_state) {
     $data->phone['mobile']['phone']      = $form_state['values']['mobile_number'];
 
     $data->email['email']                = $form_state['values']['email'];
+
+    $data->contact['availability']       = _av_volunteer_convert_availability_to_text(array(
+        'morning'   => $form_state['values']['best_time_morning'],
+        'afternoon' => $form_state['values']['best_time_afternoon'],
+        'evening'   => $form_state['values']['best_time_evening']
+    ));
 
     if ($data->save()) {
         drupal_set_message(t('Details saved!'));
@@ -541,7 +559,7 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
     # add jstree library for skills treeview popup
     $module_path = drupal_get_path('module', 'av_volunteer');
     
-    drupal_add_css($module_path . '/js/jstree/themes/default/style.min.css');
+    drupal_add_css($module_path . '/js/jstree/dist/themes/default/style.min.css');
     drupal_add_css($module_path . '/css/base.css');
     drupal_add_js($module_path . '/js/jstree/dist/jstree.min.js');
     drupal_add_js($module_path . '/js/skills.js');
@@ -623,7 +641,22 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
         '#title' => t('CV')
     );
 
-    $form['CV']['upload'] = array(
+    if (isset($data->contact['cv']['uri'])) {
+        
+        $form['CV']['current_file'] = array(
+            '#type'   => 'item',
+            '#title'  => t('Current file') . ':',
+            '#markup' => CRM_Utils_File::cleanFileName($data->contact['cv']['uri'])
+        );
+        
+        $form['CV']['delete_file'] = array(
+            '#type'  => 'checkbox',
+            '#title' => ts('Delete')
+        );
+
+    }
+
+    $form['CV']['cv_upload'] = array(
         '#type'  => 'file',
         '#title' => t('Upload CV')
     );

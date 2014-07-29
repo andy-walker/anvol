@@ -20,7 +20,8 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
      * @access public
      */
     public $custom_data = array(
-        'status' => 'custom_81'
+        'status'       => 'custom_81',
+        'availability' => 'custom_94'
     );
 
     /**
@@ -57,7 +58,8 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
                 'return.nick_name'  => 1,
                 'return.prefix_id'  => 1
             ) + array(
-                'return.' . $this->custom_data['status'] => 1
+                'return.' . $this->custom_data['status']       => 1,
+                'return.' . $this->custom_data['availability'] => 1
             ));
 
         } catch (CiviCRM_API3_Exception $e) {
@@ -181,6 +183,8 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
 
         # create Civi keys from friendly custom data keys
         $this->createCiviKeys($this->contact);
+
+        watchdog('andyw', 'saving contact = <pre>' . print_r($this->contact, true) . '</pre>');
 
         # save contact details
         try {

@@ -469,6 +469,89 @@ function av_volunteer_theme($existing, $type, $theme, $path) {
 }
 
 /**
+ * Function to convert the tickbox matrix for availability into a human-readable
+ * format to be stored in Civi. Also has a counterpart below for performing the opposite.
+ * @param  array  $data  an array of 'best_time_morning', 'best_time_afternoon', 'best_time_evening' arrays
+ * @return string        a comma-separated, human-readable string
+ */
+function _av_volunteer_convert_availability_to_text($data) {
+    
+    $times = array(
+        'mon' => array(),
+        'tue' => array(),
+        'wed' => array(),
+        'thu' => array(),
+        'fri' => array(),
+        'sat' => array(),
+        'sun' => array()
+    );
+
+    $nice_name = array(
+        'mon' => t('Monday'),
+        'tue' => t('Tuesday'),
+        'wed' => t('Wednesday'),
+        'thu' => t('Thursday'),
+        'fri' => t('Friday'),
+        'sat' => t('Saturday'),
+        'sun' => t('Sunday')
+    );
+
+    foreach ($data as $time => $time_array)
+        foreach ($time_array as $day => $yes_no)
+            if ((bool)$yes_no)
+                $times[$day][] = $time;
+    
+    $temp = array();
+
+    foreach ($times as $day => $time_of_day)
+        foreach ($time_of_day as $time)
+            $temp[] = $nice_name[$day] . ' ' . $time;
+
+    return implode(', ', $temp);
+
+}
+
+/**
+ * Function to convert a human-readable availability string into default values for the tickbox matrix
+ * that is displayed in Drupal. Also has a counterpart above for performing the opposite.
+ * @param  array  $data  an array of 'best_time_morning', 'best_time_afternoon', 'best_time_evening' arrays
+ * @return string        a comma-separated, human-readable string
+ */
+function _av_volunteer_convert_availability_from_text($text) {
+
+    $days = array(
+        'mon' => 0,
+        'tue' => 0,
+        'wed' => 0,
+        'thu' => 0,
+        'fri' => 0,
+        'sat' => 0,
+        'sun' => 0
+    );
+
+    $output = array(
+        'morning'   => $days,
+        'afternoon' => $days,
+        'evening'   => $days
+    ); 
+
+    $times = explode(', ', $text);
+    
+    foreach ($times as $time) {
+        
+        $day_time    = explode(' ', $time);
+        $machine_day = strtolower(substr($day_time[0], 0, 3));
+        $time_of_day = $day_time[1];
+        
+        $output[$time_of_day][$machine_day] = $machine_day; 
+
+    }
+
+    return $output;
+
+}
+
+/**
  * Helper function to retrieve hierarchical skills list from 'volunteer_skills' vocabulary
  * sorting by weight
  * @return StdClass containing two arrays (top-level items, sub-items)
