@@ -370,6 +370,11 @@ function av_opportunity_node_view_alter(&$build) {
             # you aren't the assigned volunteer? sorry, you can't see this field
             $build['field_client_contact']['#access'] = FALSE;
         }
+
+        # admin overwrite
+        if(in_array('Administrator', $user->roles)) {
+            $build['field_client_contact']['#access'] = TRUE;
+        }
     }
 }
 
