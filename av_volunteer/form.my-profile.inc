@@ -815,7 +815,17 @@ function av_volunteer_my_profile_references_form_submit($form, $form_state) {
     $data->contact['reference2_name']    = $form_state['values']['reference_name1'];
     $data->contact['reference2_address'] = $form_state['values']['reference_address1'];
     $data->contact['reference2_phone']   = $form_state['values']['reference_phone1'];
-
+    
+    
+    #Assign role of Volunteer with DBS once DBS date completed is entered on form save
+    if(!isset($user->roles[15]) && isset($form_state['values']['dbs_completed'])){  //Check if the user has the role already
+         $role_name = "Vounteer with DBS";
+    	 $new_role[15] = $role_name;
+	 $all_roles = $user->roles + $new_role; // Add new role to existing roles.
+     	 user_save($user, array('roles' => $all_roles));
+     	// drupal_set_message(t('User Volunteer with DBS role updated!'));
+    }
+    
     if ($data->save()) {
         drupal_set_message(t('Details saved!'));
         return;
