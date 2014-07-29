@@ -135,8 +135,15 @@ function av_opportunity_node_update($node) {
             $status->new
         );
 
+    $assignedVol = $node->field_volunteer4opp['und'][0]['uid'];
+    $originalVol = $node->original->field_volunteer4opp['und'][0]['uid'];
+
+    //watchdog('nathannode', '<pre>' . print_r($node, true) . '</pre>');
+
     # create a relationship on assigned volunteer to the Charity
-    if($node->type == 'opportunity' and isset($node->field_volunteer4opp['und'][0]['uid']) and !$flag++) {
+    if($node->type == 'opportunity' and isset($assignedVol) and !$flag++) {
+
+        watchdog('nathannode', '<pre>' . print_r($node, true) . '</pre>');
 
         civicrm_initialize();
 
@@ -155,62 +162,194 @@ function av_opportunity_node_update($node) {
         );
     
         $UFMatchID = $UFMatch['id'];
+
+        $volunteer_id = $UFMatch['values'][$UFMatchID]['contact_id'];
+
+        # get the Opportunity Contact to assign a relationship
+        if(!empty($node->field_charity_name['und'][0]['contact_id'])) {
+            $OppContact = $node->field_charity_name['und'][0]['contact_id'];
+            $rel_id = '5';
+        } else {
+            $OppContact = $node->field_client_contact['und'][0]['contact_id'];
+            $rel_id = '17';
+        }
         
-        if($node->field_volunteer4opp['und'][0]['uid'] !== $node->orginal->field_volunteer4opp['und'][0]['uid']) {
+        if($assignedVol !== $originalVol)  {
+
+            # get the start date for the relationship
+            $start = date('m/j/Y');
     
             # create a relationship of type 'Volunteer Is' for assigned volunteer
             $VolRelationship = civicrm_api("Relationship", "Create", array(
                     'version'               => '3',
                     'is_active'             => '1',
-                    'relationship_type_id'  => '5',
-                    'contact_id_b'          => $UFMatch['values'][$UFMatchID]['contact_id'],
-                    'contact_id_a'          => $node->field_cid['und'][0]['value']
+                    'relationship_type_id'  => $rel_id,
+                    'contact_id_b'          => $volunteer_id,
+                    'contact_id_a'          => $OppContact,
+                    'start_date'            => $start
                 )
             );
-        }  
+        }
+
+        watchdog('nathannode', '<pre>' . print_r($VolRelationship, true) . '</pre>');
             
         # if op has been completed, end the relationship
-        if($node->field_completed['und'][0]['value'] !== $node->original->field_completed['und'][0]['value']
-             and $node->field_completed['und'][0]['value'] === 1) {
+        if(($node->field_completed['und'][0]['value'] !== $node->original->field_completed['und'][0]['value']
+             and $node->field_completed['und'][0]['value'] === 1) || ($assignedVol !== $originalVol and !empty($originalVol))) {
 
-            # get the end date for the relationship
-            $today = date('m/j/Y');
+        if($node->field_completed['und'][0]['value'] === 1) {  
+            $OppRelationship = civicrm_api("Relationship", "Get", array(
+                    'version'               => '3',
+                    'relationship_type_id'  => $rel_id,
+                    'contact_id_b'          => $volunteer_id,
+                    'contact_id_a'          => $OppContact
+                )
+            );
+        }
+
+        if($assignedVol !== $originalVol) {
+
+            $volunteer = $node->original->field_volunteer4opp['und'][0]['uid'];
+    
+            # get the matched civicrm contact from the drupal user record
+            $UFMatch = civicrm_api("UFMatch", "get", array(
+                    'version'   => '3',
+                    'uf_id'     => $volunteer
+                )
+            );
+    
+            $UFMatchID = $UFMatch['id'];
+
+            $volunteer_id = $UFMatch['values'][$UFMatchID]['contact_id'];
 
             $OppRelationship = civicrm_api("Relationship", "Get", array(
                     'version'               => '3',
-                    'relationship_type_id'  => '5',
-                    'contact_id_b'          => $UFMatch['values'][$UFMatchID]['contact_id'],
-                    'contact_id_a'          => $node->field_cid['und'][0]['value']
+                    'relationship_type_id'  => $rel_id,
+                    'contact_id_b'          => $volunteer_id,
+                    'contact_id_a'          => $OppContact
                 )
             );
+        }
+
+            watchdog('nathannode', '<pre>' . print_r($OppRelationship, true) . '</pre>');
 
             $relID = $OppRelationship['id'];
 
-            if(isset($relID)) {
+            # need to check re-assigned vol
+            if((isset($relID)) || (isset($relID) and $assignedVol !== $originalVol)) {
+                # get the end date for the relationship
+                $end = date('m/j/Y');
+
                 # if the opportunity is complete, end the volunteer relationship to the charity
                 $EndRelationship = civicrm_api("Relationship", "Update", array(
                         'version'   => '3',
                         'id'        => $OppRelationship['values'][$relID]['id'],
                         'is_active' => 0,
-                        'end_date'  => $today
+                        'end_date'  => $end
                     )
                 );
-    
+
+                $regcoord = $node->field_assign_regional_controller['und'][0]['uid'];
+
+                # get the matched civicrm contact from the drupal user record
+                $RegUFMatch = civicrm_api("UFMatch", "Get", array(
+                        'version'   => '3',
+                        'uf_id'     => $regcoord
+                    )
+                );
+
+                $RegUFMatchID = $RegUFMatch['id'];
+
+                # regional coordinator civicrm contact id
+                $regcoord_id = $RegUFMatch['values'][$RegUFMatchID]['contact_id'];
+
                 # create an activity of type 'Volunteering Opportunity' on completion
                 $OpActivity = civicrm_api("Activity", "Create", array(
                         'version'                    => '3',
                         'activity_type_id'           => '33',
                         'activity_subject'           => 'Volunteering Opportunity',
-                        'source_contact_id'          => $node->field_cid['und'][0]['value'],
-                        'assignee_contact_id'        => $UFMatch['values'][$UFMatchID]['contact_id'],
-                        'target_contact_id'          => $UFMatch['values'][$UFMatchID]['contact_id'],
+                        'source_contact_id'          => $regcoord_id, # Reg co-ordinator
+                        'assignee_contact_id'        => $volunteer_id, # Volunteer
+                        'target_contact_id'          => $volunteer_id, # Volunteer
                         'status_id'                  => '4',
-                        'details'                    => 'some node detail'
+                        'detail'                     => $node->body['und'][0]['value']
                     )
                 );
-            }  
+            }
         }
     }
+}
+
+/**
+ * Implementation of hook_node_view
+ */
+function av_opportunity_node_view($node, $view_mode, $langcode) {
+
+    if($node->type == 'opportunity') {
+        
+        global $user;
+        civicrm_initialize();
+
+        # get the contact id from the logged-in user
+        $session =& CRM_Core_Session::singleton();
+        $indID = $session->get('userID');
+
+        # get the Opportunity Contact to assign a relationship
+        if(!empty($node->field_charity_name['und'][0]['contact_id'])) {
+            $OppContact = $node->field_charity_name['und'][0]['contact_id'];
+            $rel_id = '5';
+        } else {
+            $OppContact = $node->field_client_contact['und'][0]['contact_id'];
+            $rel_id = '17';
+        }
+
+        # assigned volunteer's uid
+        $volunteer = $node->field_volunteer4opp['und'][0]['uid'];
+
+        if(isset($volunteer)) {
+            # get the matched civicrm contact from the drupal user record
+            $volUFMatch = civicrm_api("UFMatch", "get", array(
+                    'version'   => '3',
+                    'uf_id'     => $volunteer
+                )
+            );
+
+            # get the volunteer civicrm contact id
+            $volUFMatchID = $volUFMatch['id'];
+
+            # does the volunteer have an employee relationship with the client?
+            $volRel = civicrm_api("Relationship", "Get", array(
+                    'version'               => 3,
+                    'contact_id_b'          => $indID,
+                    'contact_id_a'          => $OppContact,
+                    'relationship_type_id'  => $rel_id
+                )
+            );
+
+            $volRelID = $volRel['id'];
+
+            $assigned_vol = $volUFMatch['values'][$volUFMatchID]['contact_id'];
+
+            if($assigned_vol === $indID) {
+                watchdog('nathantest', 'testing');
+            }
+
+            # the relationship exists? Great! show the node comments
+            if((!empty($volRel['values']) and $volRel['values'][$volRelID]['is_active'] == 1) || (in_array('Administrator', $user->roles))) {
+                $node->comment = 2; # comment (0 = disabled, 1 = read only, 2 = read/write)
+            } else {
+                $node->comment = 0;
+            }
+        }
+
+        if(!isset($volunteer) and !in_array('Administrator', $user->roles)) {
+            $node->comment = 0;
+        }
+
+        //watchdog('nathannode2', '<pre>' . print_r($node, true) . '</pre>');
+
+        return $node;
+    } 
 }
 
 /**
