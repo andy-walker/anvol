@@ -231,7 +231,7 @@ function av_opportunity_node_update($node) {
             );
         }
 
-            watchdog('nathannode', '<pre>' . print_r($OppRelationship, true) . '</pre>');
+            //watchdog('nathannode', '<pre>' . print_r($OppRelationship, true) . '</pre>');
 
             $relID = $OppRelationship['id'];
 
@@ -294,7 +294,7 @@ function av_opportunity_node_view($node, $view_mode, $langcode) {
         $session =& CRM_Core_Session::singleton();
         $indID = $session->get('userID');
 
-        # get the Opportunity Contact to assign a relationship
+        # get the Opportunity Contact to assign a relationship - set the relationship id based on the opportunity contact
         if(!empty($node->field_charity_name['und'][0]['contact_id'])) {
             $OppContact = $node->field_charity_name['und'][0]['contact_id'];
             $rel_id = '5';
@@ -302,6 +302,8 @@ function av_opportunity_node_view($node, $view_mode, $langcode) {
             $OppContact = $node->field_client_contact['und'][0]['contact_id'];
             $rel_id = '17';
         }
+
+        //hide($node->field_client_contact['und'][0]['contact_id']);
 
         # assigned volunteer's uid
         $volunteer = $node->field_volunteer4opp['und'][0]['uid'];
@@ -350,6 +352,25 @@ function av_opportunity_node_view($node, $view_mode, $langcode) {
 
         return $node;
     } 
+}
+
+function av_opportunity_node_view_alter(&$build) {
+
+    global $user;
+
+    # hide the client contact for volunteers that are not assigned.
+    if(isset($build['field_client_contact'])) {
+
+        $node = $build['field_client_contact']['#object'];
+
+        # assigned volunteer's uid
+        $volunteer = $node->field_volunteer4opp['und'][0]['uid'];
+
+        if($volunteer != $user->uid) {
+            # you aren't the assigned volunteer? sorry, you can't see this field
+            $build['field_client_contact']['#access'] = FALSE;
+        }
+    }
 }
 
 /**
