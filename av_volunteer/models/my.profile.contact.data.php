@@ -21,7 +21,8 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
      */
     public $custom_data = array(
         'status'       => 'custom_81',
-        'availability' => 'custom_94'
+        'availability' => 'custom_94',
+        'region'       => 'custom_96'
     );
 
     /**
@@ -34,6 +35,34 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
 
     public function __construct($uid = null) {
         parent::__construct($uid);
+    }
+
+    protected function convertRegionsFromText($regions_text) {
+
+        $region_ids = array(); 
+        watchdog('andyw', 'regions_text = ' . $regions_text);
+
+        foreach (explode(',', $regions_text) as $region)
+            $region_ids[] = str_replace(array('(', ')'), '', end(explode(' ', $region)));
+
+        watchdog('andyw', 'region_ids = <pre>' . print_r($region_ids, true) . '</pre>');
+        return $region_ids;
+        
+    }
+
+    protected function convertRegionsToText($region_ids) {
+        
+        $taxonomy = _av_volunteer_get_regions()->terms;
+        $regions  = array();
+
+        foreach ($region_ids as $id)
+            $regions[] = sprintf("%s (%d)", str_replace('- ', '', $taxonomy[$id]), $id);
+
+        if ($regions)
+            return implode(', ', $regions);
+
+        return '';
+
     }
 
     /**
@@ -59,7 +88,8 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
                 'return.prefix_id'  => 1
             ) + array(
                 'return.' . $this->custom_data['status']       => 1,
-                'return.' . $this->custom_data['availability'] => 1
+                'return.' . $this->custom_data['availability'] => 1,
+                'return.' . $this->custom_data['region']       => 1
             ));
 
         } catch (CiviCRM_API3_Exception $e) {
@@ -70,6 +100,7 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
         }
 
         $this->createFriendlyKeys($this->contact);
+        $this->contact['region'] = $this->convertRegionsFromText($this->contact['region']);
 
         # get primary address for contact
         try {
@@ -156,8 +187,9 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
 
         $this->email = $result['count'] ? reset($result['values']) : array();
 
-        /*
+        
         $this->log('contact', $this->contact);
+        /*
         $this->log('address', $this->address);  
         $this->log('phone',   $this->phone);
         $this->log('email',   $this->email);    
@@ -181,6 +213,8 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
         # naively assume success initially
         $success = true;
 
+        $this->contact['region'] = $this->convertRegionsToText($this->contact['region']);
+
         # create Civi keys from friendly custom data keys
         $this->createCiviKeys($this->contact);
 
@@ -196,6 +230,14 @@ class My_Profile_Contact_Data extends Volunteer_Abstract_Data_Model {
                 '!debug'      => $debug($this->contact)
             ));
         }
+
+        $custom = &$this->custom_data;
+        $params = array(
+            'entityID'        => $this->contact['id'],
+            $custom['region'] => $this->contact['region']
+        );
+
+        CRM_Core_BAO_CustomValueTable::setValues($params);
 
         # save address details
         if (!isset($this->address['contact_id']))

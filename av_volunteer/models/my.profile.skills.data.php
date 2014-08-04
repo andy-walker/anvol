@@ -21,7 +21,7 @@ class My_Profile_Skills_Data extends Volunteer_Abstract_Data_Model {
      */
     public $custom_data = array(
         'level_of_qualification' => 'custom_70',
-        'cv'                     => 'custom_95'
+        'cv_file_id'             => 'custom_95'
     );
 
     /**
@@ -36,6 +36,13 @@ class My_Profile_Skills_Data extends Volunteer_Abstract_Data_Model {
      */
     public function __construct($uid = null) {
         parent::__construct($uid);
+    }
+
+    protected function deleteCVFile() {
+
+        $config = CRM_Core_Config::singleton();
+        watchdog('andyw', 'config = <pre>' . print_r($config, true) . '</pre>');
+
     }
 
     /**
@@ -86,19 +93,28 @@ class My_Profile_Skills_Data extends Volunteer_Abstract_Data_Model {
         $this->createFriendlyKeys($this->contact);
 
         # load file info
-        if (isset($this->contact['cv_file_id']) and !empty($this->contact['cv_file_id'])) {
-            try {
-                $this->contact['cv_file'] = civicrm_api3('file', 'getsingle', array('id' => $this->contact['cv']));
-            } catch (CiviCRM_API3_Exception $e) {
-                return $this->error("Error getting cv file metadata for @contact_id: @excuse", array(
-                    '@contact_id' => $this->contact_id,
-                    '@excuse'     => $e->getMessage()
-                ));
-            }
-        }      
+        if (isset($this->contact['cv_file_id']) and !empty($this->contact['cv_file_id']))
+            $this->contact['cv_file'] = $this->loadFile($this->contact['cv_file_id']);   
 
         $this->log('skills', $this->contact);
 
+    }
+
+    /**
+     * Load civicrm_file object for the specified file id
+     * @param  int   $file_id
+     * @return array 
+     * @access protected
+     */
+    protected function loadFile($file_id) {
+        try {
+            $this->contact['cv_file'] = civicrm_api3('file', 'getsingle', array('id' => $this->contact['cv_file_id']));
+        } catch (CiviCRM_API3_Exception $e) {
+            return $this->error("Error getting cv file metadata for @contact_id: @excuse", array(
+                '@contact_id' => $this->contact_id,
+                '@excuse'     => $e->getMessage()
+            ));
+        }
     }
 
     /**
@@ -130,6 +146,11 @@ class My_Profile_Skills_Data extends Volunteer_Abstract_Data_Model {
                 '!debug'      => $debug($this->contact)
             ));
         }
+
+        # delete cv file if requested
+        if ($this->contact['delete_cv_file'])
+            $this->deleteFile();
+        
 
         return (bool)$success;
 

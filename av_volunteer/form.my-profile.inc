@@ -94,11 +94,37 @@ function av_volunteer_my_profile($form_state) {
             '#size'  => 31
         );
 
+        /*
         $form['county'] = array(
             '#type'          => 'select',
             '#title'         => t('County'),
             '#options'       => array(0 => t('Select...')) + $data->getOptions('state_province'),
             '#default_value' => isset($data->address['state_province_id']) ? $data->address['state_province_id'] : 0
+        );
+        */
+        drupal_add_js("
+            
+            jQuery(function() {
+                jQuery('#edit-region option').each(function() {
+                    if (!jQuery(this).html().match(/^\-/) && jQuery(this).val() != '0')
+                        jQuery(this).attr('disabled', 'disabled');
+                });
+            });
+
+        ", array(
+              'type'  => 'inline',
+              'scope' => 'header'
+           )
+        );
+
+        $taxonomy = _av_volunteer_get_regions();
+
+        $form['region'] = array(
+            '#type'          => 'select',
+            '#title'         => t('Region'),
+            '#options'       => array(0 => 'Select...') + $taxonomy->terms,
+            '#default_value' => isset($data->contact['region']) ? $data->contact['region'] : array(),
+            '#multiple'      => true
         );
 
     }
@@ -181,8 +207,6 @@ function av_volunteer_my_profile($form_state) {
                 $data->contact['availability']
             );
 
-        watchdog('andyw', 'best_time = <pre>' . print_r($best_time, true) . '</pre>');
-
         $form['best_time_morning'] = array(
             '#type'          => 'checkboxes',
             '#options'       => $days,
@@ -264,10 +288,10 @@ function av_volunteer_my_profile_form_submit($form, &$form_state) {
     $data->contact['last_name']          = $form_state['values']['lastname'];
     $data->contact['nick_name']          = $form_state['values']['known_as'];
     $data->contact['status']             = $form_state['values']['status'];
-    
+    $data->contact['region']             = $form_state['values']['region'];
+
     $data->address['street_address']     = $form_state['values']['address'];
     $data->address['city']               = $form_state['values']['city'];
-    $data->address['state_province_id']  = $form_state['values']['county'];
     $data->address['postal_code']        = $form_state['values']['postcode'];
 
     $data->phone['main']['phone']        = $form_state['values']['phone_number'];
@@ -641,15 +665,15 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
         '#title' => t('CV')
     );
 
-    if (isset($data->contact['cv']['uri'])) {
+    if (isset($data->contact['cv_file']['uri'])) {
         
         $form['CV']['current_file'] = array(
             '#type'   => 'item',
             '#title'  => t('Current file') . ':',
-            '#markup' => CRM_Utils_File::cleanFileName($data->contact['cv']['uri'])
+            '#markup' => CRM_Utils_File::cleanFileName($data->contact['cv_file']['uri'])
         );
         
-        $form['CV']['delete_file'] = array(
+        $form['CV']['delete_cv_file'] = array(
             '#type'  => 'checkbox',
             '#title' => ts('Delete')
         );
@@ -680,6 +704,7 @@ function av_volunteer_my_profile_skills_form_submit($form, $form_state) {
     $data = new My_Profile_Skills_Data($user->uid);
 
     $data->contact['level_of_qualification'] = $form_state['values']['achievement_level'];
+    $data->contact['delete_cv_file']         = $form_state['values']['delete_cv_file'];
 
     if ($data->save()) {
         drupal_set_message(t('Details saved!'));
