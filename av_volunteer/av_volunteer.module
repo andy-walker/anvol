@@ -6,6 +6,87 @@
  */
 
 /**
+ * Implementation of hook_civicrm_post
+ */
+function av_volunteer_civicrm_post($op, $objectName, $objectId, &$objectRef) {
+
+    # when an Individual record is created, check roles of associated user 
+    # and set contact type of contact accordingly
+    if ($objectName == 'Individual' and $op == 'create') {
+        
+        # defer to shutdown to ensure UFMatch records have been created
+        register_shutdown_function(function($objectId, $objectRef) {
+
+            civicrm_initialize();
+
+            try {
+
+                $uf_id = civicrm_api3('UFMatch', 'getvalue', array(
+                    'contact_id' => $objectId,
+                    'return'     => 'uf_id'
+                ));
+
+            } catch (CiviCRM_API3_Exception $e) { 
+                return (bool)watchdog('av_volunteer', "Error getting user id for contact id @contact_id in @file at line @line: @excuse", array(
+                    '@contact_id' => $objectId,
+                    '@file'       => __FILE__,
+                    '@line'       => __LINE__,
+                    '@excuse'     => $e->getMessage()
+                ), WATCHDOG_ERROR);
+            }
+
+            # load user record
+            if (!$user = user_load($uf_id))
+                return (bool)watchdog('av_volunteer', "Unable to load user record for user id @uid in @file, line @line", array(
+                    '@uid'    => $uf_id,
+                    '@file'   => __FILE__,
+                    '@line'   => __LINE__
+                ), WATCHDOG_ERROR);           
+
+            # set the appropriate contact type for user's role
+            switch (true) {
+            
+                case av_role_has_roles($user, 'Charity Rep'):
+                    $contact_type = 'CharityRep';
+                    break;
+
+                case av_role_has_roles($user, 'Individual Volunteer'):
+                    $contact_type = 'Volunteer';
+                    break;
+
+                case av_role_has_roles($user, 'Analyst'):
+                    $contact_type = 'Analyst';
+                    break;
+
+                default:
+                    return;
+
+            }
+
+            # update contact record
+            try {
+
+                civicrm_api3('contact', 'create', array(
+                    'contact_id'       => $objectId,
+                    'contact_sub_type' => $contact_type
+                ));
+
+            } catch (CiviCRM_API3_Exception $e) {
+                return (bool)watchdog('av_volunteer', "Unable to update contact record for contact id @contact_id in @file, line @line: @excuse", array(
+                    '@contact_id' => $objectId,
+                    '@excuse'     => $e->getMessage(),
+                    '@file'       => __FILE__,
+                    '@line'       => __LINE__
+                ));
+            }
+
+        }, $objectId, $objectRef);
+
+    }
+
+}
+
+/**
  * Implementation of hook_form_alter
  */
 function av_volunteer_form_alter(&$form, &$form_state, $form_id) {
