@@ -10,8 +10,11 @@
  */
 function av_volunteer_civicrm_post($op, $objectName, $objectId, &$objectRef) {
 
+    # watchdog('andyw', 'post: <pre>' . print_r(get_defined_vars(), true) . '</pre>');
+
     # when an Individual record is created, check roles of associated user 
-    # and set contact type of contact accordingly
+    # and set contact type of contact accordingly - this only really applies to users created through the admin
+    # interface, the webforms should set the correct contact type - however it runs in both cases.
     if ($objectName == 'Individual' and $op == 'create') {
         
         # defer to shutdown to ensure UFMatch records have been created
