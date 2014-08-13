@@ -616,50 +616,41 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
 
     );
 
-    $form['skills']['add_skills'] = array(
-        '#markup' => theme(
-            'av_volunteer-skills-treeview',
-            array(
-                'skills' => _av_volunteer_get_skills()
-            )
-        )
+    $form['skills']['skills_strategy'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Strategy & Architecture'),
+        '#options'       => $data->getOptions('strategy_and_architecture_20140813121958'),
+        '#default_value' => isset($data->contact['skills_strategy']) ? $data->contact['skills_strategy'] : ''
     );
     
-    # assemble options array for years
-    $year_options = array(t('Select...'));
-    foreach (range(1, 20) as $value)
-        $year_options[$value] = $value . ' year' . ($value > 1 ? 's' : '');
-    $year_options[20] = '20+';
+    $form['skills']['skills_business'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Business Change'),
+        '#options'       => $data->getOptions('business_change_20140813122247'),
+        '#default_value' => isset($data->contact['skills_business']) ? $data->contact['skills_business'] : ''
+    );
 
-    foreach (range(0, ABNV_MAX_SKILLS - 1) as $index) {
-        
-        $form['skills']['skill_wrapper_div_' . $index] = array(
-            '#markup' => '<div class="skill-wrapper skill-wrapper-' . $index . '">'
-        );
+    $form['skills']['skills_solution'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Solution Development'),
+        '#options'       => $data->getOptions('solution_development_20140813122449'),
+        '#default_value' => isset($data->contact['skills_solution']) ? $data->contact['skills_solution'] : ''
+    );
 
-        $form['skills']['skill_' . $index] = array(
-            '#type' => 'hidden'
-        );
+    $form['skills']['skills_technologies'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Technologies'),
+        '#options'       => $data->getOptions('technologies_20140813122628'),
+        '#default_value' => isset($data->contact['skills_technologies']) ? $data->contact['skills_technologies'] : ''
+    );
 
-        $form['skills']['skill_delete_' . $index] = array(
-            '#markup' => '<button class="btn btn-danger">' . t('Delete') . '</button>'
-        );
+    $form['skills']['skills_service'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Service'),
+        '#options'       => $data->getOptions('service_20140813122749'),
+        '#default_value' => isset($data->contact['skills_service']) ? $data->contact['skills_service'] : ''
+    );
 
-        $form['skills']['skill_years_' . $index] = array(
-            '#type'    => 'select',
-            '#options' => $year_options
-        );
-
-        $form['skills']['skill_label_' . $index] = array(
-            '#markup' => '<div class="skill-label"></div>'
-        );
-
-        $form['skills']['skill_wrapper_closediv_' . $index] = array(
-            '#markup' => '<div style="clear:both"></div></div>'
-        );
-
-    }
-    
     $form['CV'] = array(
         '#type'  => 'fieldset',
         '#title' => t('CV')
