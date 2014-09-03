@@ -21,9 +21,11 @@ class My_Profile_Reference_Data extends Volunteer_Abstract_Data_Model {
      */
     public $custom_data = array(
         'reference1_name'    => 'custom_55',
+        'reference1_email'   => 'custom_102',
         'reference1_address' => 'custom_79',
         'reference1_phone'   => 'custom_88',
         'reference2_name'    => 'custom_58',
+        'reference2_email'   => 'custom_103',
         'reference2_address' => 'custom_80',
         'reference2_phone'   => 'custom_89',
     );
