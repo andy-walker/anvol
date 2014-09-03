@@ -6,90 +6,6 @@
  */
 
 /**
- * Implementation of hook_civicrm_post
- */
-function av_volunteer_civicrm_post($op, $objectName, $objectId, &$objectRef) {
-
-    # watchdog('andyw', 'post: <pre>' . print_r(get_defined_vars(), true) . '</pre>');
-
-    # when an Individual record is created, check roles of associated user 
-    # and set contact type of contact accordingly - this only really applies to users created through the admin
-    # interface, the webforms should set the correct contact type - however it runs in both cases.
-    if ($objectName == 'Individual' and $op == 'create') {
-        
-        # defer to shutdown to ensure UFMatch records have been created
-        register_shutdown_function(function($objectId, $objectRef) {
-
-            civicrm_initialize();
-
-            try {
-
-                $uf_id = civicrm_api3('UFMatch', 'getvalue', array(
-                    'contact_id' => $objectId,
-                    'return'     => 'uf_id'
-                ));
-
-            } catch (CiviCRM_API3_Exception $e) { 
-                return (bool)watchdog('av_volunteer', "Error getting user id for contact id @contact_id in @file at line @line: @excuse", array(
-                    '@contact_id' => $objectId,
-                    '@file'       => __FILE__,
-                    '@line'       => __LINE__,
-                    '@excuse'     => $e->getMessage()
-                ), WATCHDOG_ERROR);
-            }
-
-            # load user record
-            if (!$user = user_load($uf_id))
-                return (bool)watchdog('av_volunteer', "Unable to load user record for user id @uid in @file, line @line", array(
-                    '@uid'    => $uf_id,
-                    '@file'   => __FILE__,
-                    '@line'   => __LINE__
-                ), WATCHDOG_ERROR);           
-
-            # set the appropriate contact type for user's role
-            switch (true) {
-            
-                case av_role_has_roles($user, 'Charity Rep'):
-                    $contact_type = 'CharityRep';
-                    break;
-
-                case av_role_has_roles($user, 'Individual Volunteer'):
-                    $contact_type = 'Volunteer';
-                    break;
-
-                case av_role_has_roles($user, 'Analyst'):
-                    $contact_type = 'Analyst';
-                    break;
-
-                default:
-                    return;
-
-            }
-
-            # update contact record
-            try {
-
-                civicrm_api3('contact', 'create', array(
-                    'contact_id'       => $objectId,
-                    'contact_sub_type' => $contact_type
-                ));
-
-            } catch (CiviCRM_API3_Exception $e) {
-                return (bool)watchdog('av_volunteer', "Unable to update contact record for contact id @contact_id in @file, line @line: @excuse", array(
-                    '@contact_id' => $objectId,
-                    '@excuse'     => $e->getMessage(),
-                    '@file'       => __FILE__,
-                    '@line'       => __LINE__
-                ));
-            }
-
-        }, $objectId, $objectRef);
-
-    }
-
-}
-
-/**
  * Implementation of hook_form_alter
  */
 function av_volunteer_form_alter(&$form, &$form_state, $form_id) {
@@ -130,7 +46,7 @@ function av_volunteer_init() {
 function av_volunteer_menu() {
 
     module_load_include('inc', 'av_volunteer', 'av_volunteer.settings');
-
+    
     $items['volunteer/my-profile'] = array(
         
         'title'            => t('My Profile'),
@@ -178,11 +94,11 @@ function av_volunteer_menu() {
         'type'             => MENU_NORMAL_ITEM
     
     );
-
+    /*
     $items['volunteer/my-profile/contact'] = array(
     
         'title'            => 'Contact',
-        'type'             => MENU_DEFAULT_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
@@ -191,7 +107,9 @@ function av_volunteer_menu() {
         'weight'           => 1
     
     );
-
+    */
+    
+    /*
     $items['analyst/my-profile/contact'] = array(
     
         'title'            => 'Contact',
@@ -204,11 +122,13 @@ function av_volunteer_menu() {
         'weight'           => 1
     
     );
+    */
 
+    /*
     $items['regional-controller/my-profile/contact'] = array(
     
         'title'            => 'Contact',
-        'type'             => MENU_DEFAULT_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor', 'Regional Controller'),
@@ -217,7 +137,9 @@ function av_volunteer_menu() {
         'weight'           => 1
     
     );
+    */
 
+    /*
     $items['charity/my-profile/contact'] = array(
     
         'title'            => 'Contact',
@@ -230,11 +152,12 @@ function av_volunteer_menu() {
         'weight'           => 1
     
     );
+    */
 
     $items['volunteer/my-profile/details'] = array(
     
         'title'            => 'Details',
-        'type'             => MENU_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
@@ -247,7 +170,7 @@ function av_volunteer_menu() {
     $items['charity/my-profile/details'] = array(
     
         'title'            => 'Details',
-        'type'             => MENU_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep'),
@@ -260,7 +183,7 @@ function av_volunteer_menu() {
     $items['regional-controller/my-profile/details'] = array(
     
         'title'            => 'Details',
-        'type'             => MENU_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('Regional Controller'),
@@ -273,7 +196,7 @@ function av_volunteer_menu() {
     $items['volunteer/my-profile/skills'] = array(
     
         'title'            => 'Skills',
-        'type'             => MENU_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Assessor'),
@@ -286,7 +209,7 @@ function av_volunteer_menu() {
     $items['volunteer/my-profile/references'] = array(
     
         'title'            => 'References',
-        'type'             => MENU_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Assessor'),
@@ -299,7 +222,7 @@ function av_volunteer_menu() {
     $items['volunteer/my-profile/password'] = array(
     
         'title'            => 'Password',
-        'type'             => MENU_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
@@ -312,7 +235,7 @@ function av_volunteer_menu() {
     $items['analyst/my-profile/password'] = array(
     
         'title'            => 'Password',
-        'type'             => MENU_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor'),
@@ -325,7 +248,7 @@ function av_volunteer_menu() {
     $items['regional-controller/my-profile/password'] = array(
     
         'title'            => 'Password',
-        'type'             => MENU_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor', 'Regional Controller'),
@@ -338,7 +261,7 @@ function av_volunteer_menu() {
     $items['charity/my-profile/password'] = array(
     
         'title'            => 'Password',
-        'type'             => MENU_LOCAL_TASK,
+        'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep'),
