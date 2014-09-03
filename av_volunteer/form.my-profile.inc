@@ -336,8 +336,47 @@ function av_volunteer_my_profile_details_tab($form_state) {
     );
 
     $where_hear_options = array(0 => t('Select ...')) + $data->getOptions('where_did_you_hear_about_us__20140611140531');
+	
+	//change volunteer to company link contact sub type
+	$company_params = array(
+	  'version' => 3,
+	  'sequential' => 1,
+	  'contact_type' => 'Individual',
+	  'contact_sub_type' => 'Volunteer',
+      'rowCount'    => 50,
+      'return'  => array(
+        'contact_id',
+        'display_name'
+        )
+	);
+	
+	$company_volunteer_values = civicrm_api('Contact', 'GET', $company_params);
+    
+	$company_volunteer_options = array();
+	foreach($company_volunteer_values['values'] as $key => $company_value) {
+		$company_volunteer_options[$company_value['contact_id']] = $company_value['display_name'];
+	}
 
-    $form = array(
+    //watchdog('nathan', '<pre>' . print_r($company_volunteer_options, true) . '</pre>');
+
+	$form = array(
+
+    	'volunteer_link'   => array(
+    		'#type'    => 'checkbox',
+    		'#title'   => t('I\'m part of a Corporate Volunteering Scheme'),
+    	),
+
+        'company_scheme'    => array(
+            '#type'     => 'select',
+            '#title'    => t('Volunteering Company'),
+            '#options'  => $company_volunteer_options,
+            '#states'       => array(
+                'visible'  => array(
+                    ':input[name="volunteer_link"]' =>
+                array('checked' => TRUE),
+                ),
+            ),
+        ),
 
         'work_type' => array(
             '#type'          => 'checkboxes',
@@ -362,9 +401,15 @@ function av_volunteer_my_profile_details_tab($form_state) {
 
         'share_details' => array(
             '#type'     => 'radios',
-            '#title'    => t('Share Details'),
+            '#title'    => t('Share My Details with Charities'),
             '#options'       => $data->getOptions('sharing_details_20120112174737'),
-            '#default_value' => isset($data->contact['sharing']) ? $data->contact['sharing'] : 'Full details'
+            '#default_value' => isset($data->contact['sharing']) ? $data->contact['sharing'] : 'Full details',
+        	    '#states'	     => array(
+        		  'visible'      => array(
+        		      ':input[name="work_type[Charities]"]' =>
+        	       array('checked' => TRUE),
+        		),
+            ),
         ),
 
         'where_you_hear' => array(
@@ -411,6 +456,8 @@ function av_volunteer_my_profile_details_form_submit($form, &$form_state) {
         drupal_set_message(t('Details saved!'));
         return;
     }
+
+    //create select list from company contacts (contact_sub_type), then create relationship (volunteer -> company) <- todo
 
     # more descriptive error will be posted to the watchdog
     drupal_set_message(t('There was a problem saving your details. Please contact the site administrator.'), 'error');   
@@ -616,50 +663,41 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
 
     );
 
-    $form['skills']['add_skills'] = array(
-        '#markup' => theme(
-            'av_volunteer-skills-treeview',
-            array(
-                'skills' => _av_volunteer_get_skills()
-            )
-        )
+    $form['skills']['skills_strategy'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Strategy & Architecture'),
+        '#options'       => $data->getOptions('strategy_and_architecture_20140813121958'),
+        '#default_value' => isset($data->contact['skills_strategy']) ? $data->contact['skills_strategy'] : ''
     );
     
-    # assemble options array for years
-    $year_options = array(t('Select...'));
-    foreach (range(1, 20) as $value)
-        $year_options[$value] = $value . ' year' . ($value > 1 ? 's' : '');
-    $year_options[20] = '20+';
+    $form['skills']['skills_business'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Business Change'),
+        '#options'       => $data->getOptions('business_change_20140813122247'),
+        '#default_value' => isset($data->contact['skills_business']) ? $data->contact['skills_business'] : ''
+    );
 
-    foreach (range(0, ABNV_MAX_SKILLS - 1) as $index) {
-        
-        $form['skills']['skill_wrapper_div_' . $index] = array(
-            '#markup' => '<div class="skill-wrapper skill-wrapper-' . $index . '">'
-        );
+    $form['skills']['skills_solution'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Solution Development'),
+        '#options'       => $data->getOptions('solution_development_20140813122449'),
+        '#default_value' => isset($data->contact['skills_solution']) ? $data->contact['skills_solution'] : ''
+    );
 
-        $form['skills']['skill_' . $index] = array(
-            '#type' => 'hidden'
-        );
+    $form['skills']['skills_technologies'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Technologies'),
+        '#options'       => $data->getOptions('technologies_20140813122628'),
+        '#default_value' => isset($data->contact['skills_technologies']) ? $data->contact['skills_technologies'] : ''
+    );
 
-        $form['skills']['skill_delete_' . $index] = array(
-            '#markup' => '<button class="btn btn-danger">' . t('Delete') . '</button>'
-        );
+    $form['skills']['skills_service'] = array(
+        '#type'          => 'checkboxes',
+        '#title'         => t('Service'),
+        '#options'       => $data->getOptions('service_20140813122749'),
+        '#default_value' => isset($data->contact['skills_service']) ? $data->contact['skills_service'] : ''
+    );
 
-        $form['skills']['skill_years_' . $index] = array(
-            '#type'    => 'select',
-            '#options' => $year_options
-        );
-
-        $form['skills']['skill_label_' . $index] = array(
-            '#markup' => '<div class="skill-label"></div>'
-        );
-
-        $form['skills']['skill_wrapper_closediv_' . $index] = array(
-            '#markup' => '<div style="clear:both"></div></div>'
-        );
-
-    }
-    
     $form['CV'] = array(
         '#type'  => 'fieldset',
         '#title' => t('CV')
@@ -744,7 +782,14 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
             '#size'          => 40,
             '#default_value' => isset($data->contact["reference{$number}_name"]) ? $data->contact["reference{$number}_name"] : ''
         );        
-        
+
+        $form['reference_' . $index]['reference_email' . $index] = array(
+            '#type'          => 'textfield',
+            '#title'         => t('Reference Email'),
+            '#size'          => 40,
+            '#default_value' => isset($data->contact["reference{$number}_email"]) ? $data->contact["reference{$number}_email"] : ''
+        );      
+      
         $form['reference_' . $index]['reference_phone' . $index] = array(
             '#type'          => 'textfield',
             '#title'         => t('Phone No'),
@@ -834,10 +879,12 @@ function av_volunteer_my_profile_references_form_submit($form, $form_state) {
     $data = new My_Profile_Reference_Data($user->uid);
 
     $data->contact['reference1_name']    = $form_state['values']['reference_name0'];
+    $data->contact['reference1_email']   = $form_state['values']['reference_email0'];
     $data->contact['reference1_address'] = $form_state['values']['reference_address0'];
     $data->contact['reference1_phone']   = $form_state['values']['reference_phone0'];
 
     $data->contact['reference2_name']    = $form_state['values']['reference_name1'];
+    $data->contact['reference2_email']   = $form_state['values']['reference_email1'];
     $data->contact['reference2_address'] = $form_state['values']['reference_address1'];
     $data->contact['reference2_phone']   = $form_state['values']['reference_phone1'];
     
