@@ -210,7 +210,7 @@ function av_volunteer_my_profile($form_state) {
         $form['best_time_morning'] = array(
             '#type'          => 'checkboxes',
             '#options'       => $days,
-            '#prefix'        => '<div class="checkbox-row"><div class="checkbox-cell row-label">Morning</div>',
+            '#prefix'        => '<div class="checkbox-row morning"><div class="checkbox-cell row-label">Morning</div>',
             '#suffix'        => '</div>',
             '#default_value' => isset($best_time['morning']) ? $best_time['morning'] : array()
         );
@@ -218,7 +218,7 @@ function av_volunteer_my_profile($form_state) {
         $form['best_time_afternoon'] = array(
             '#type'          => 'checkboxes',
             '#options'       => $days,
-            '#prefix'        => '<div class="checkbox-row"><div class="checkbox-cell row-label">Afternoon</div>',
+            '#prefix'        => '<div class="checkbox-row afternoon"><div class="checkbox-cell row-label">Afternoon</div>',
             '#suffix'        => '</div>',
             '#default_value' => isset($best_time['afternoon']) ? $best_time['afternoon'] : array()
         );
@@ -226,7 +226,7 @@ function av_volunteer_my_profile($form_state) {
         $form['best_time_evening'] = array(
             '#type'          => 'checkboxes',
             '#options'       => $days,
-            '#prefix'        => '<div class="checkbox-row"><div class="checkbox-cell row-label">Evening</div>',
+            '#prefix'        => '<div class="checkbox-row evening"><div class="checkbox-cell row-label">Evening</div>',
             '#suffix'        => '</div>',
             '#default_value' => isset($best_time['evening']) ? $best_time['evening'] : array()
         );
@@ -237,13 +237,15 @@ function av_volunteer_my_profile($form_state) {
 
     }
 
+    // redirect to message on submission
+    $form['#action'] = $form['#action'].'#message-details';
+
     $form['submit'] = array(
         '#type'        => 'submit',
         '#value'       => t('Save'),
         '#validate'    => array('av_volunteer_my_profile_form_validate')
     );
 
-    ;
     $form['#submit'][]   = 'av_volunteer_my_profile_form_submit';
 
     return $form;
@@ -269,7 +271,6 @@ function av_volunteer_my_profile_form_validate($form, &$form_state) {
         form_set_error($field, t("'@field_name' is not a valid email address.", array(
             '@field_name' => $form['email']['#title']
         )));
-
 
 }
 
@@ -337,12 +338,12 @@ function av_volunteer_my_profile_details_tab($form_state) {
 
     $where_hear_options = array(0 => t('Select ...')) + $data->getOptions('where_did_you_hear_about_us__20140611140531');
 	
-	//change volunteer to company link contact sub type
+	# change volunteer to company link contact sub type
 	$company_params = array(
 	  'version' => 3,
 	  'sequential' => 1,
-	  'contact_type' => 'Individual',
-	  'contact_sub_type' => 'Volunteer',
+	  'contact_type' => 'Organization',
+	  'contact_sub_type' => 'CSR_Company',
       'rowCount'    => 50,
       'return'  => array(
         'contact_id',
@@ -352,18 +353,20 @@ function av_volunteer_my_profile_details_tab($form_state) {
 	
 	$company_volunteer_values = civicrm_api('Contact', 'GET', $company_params);
     
+    # separate the important information to use with a field
 	$company_volunteer_options = array();
 	foreach($company_volunteer_values['values'] as $key => $company_value) {
 		$company_volunteer_options[$company_value['contact_id']] = $company_value['display_name'];
 	}
 
-    //watchdog('nathan', '<pre>' . print_r($company_volunteer_options, true) . '</pre>');
+    //watchdog('nathan', '<pre>' . print_r($data->contact, true) . '</pre>');
 
 	$form = array(
 
     	'volunteer_link'   => array(
     		'#type'    => 'checkbox',
     		'#title'   => t('I\'m part of a Corporate Volunteering Scheme'),
+            '#default_value' => isset($data->contact['volunteer_link']) ? $data->contact['volunteer_link'] : 1
     	),
 
         'company_scheme'    => array(
@@ -445,12 +448,41 @@ function av_volunteer_my_profile_details_form_submit($form, &$form_state) {
     global $user;
     $data = new My_Profile_Details_Data($user->uid);
 
+    $data->contact['volunteer_link']       = $form_state['values']['volunteer_link'];
     $data->contact['newsletter']           = $form_state['values']['monthly_newsletter'];
     $data->contact['email_opps']           = $form_state['values']['email_opportunities'];
     $data->contact['reason']               = $form_state['values']['why_you_want_do_this'];
     $data->contact['where_hear_volunteer'] = $form_state['values']['where_you_hear'];
     $data->contact['sharing']              = $form_state['values']['share_details'];
     $data->contact['assistance_type']      = $form_state['values']['work_type'];
+
+    if($form_state['values']['volunteer_link']) {
+        # create a relationship to company
+
+        # load data
+        $load_data = new My_Profile_Contact_Data($user->uid);
+
+        $vol_get_params = array(
+            'version'              => '3',
+            'relationship_type_id' => '18',
+            'contact_id_b'         => $load_data->contact['id']
+        );
+
+        $vol_create_params = array(
+            'version'              => '3',
+            'contact_id_a'         => $form_state['values']['company_scheme'],
+            'contact_id_b'         => $load_data->contact['id'],
+            'relationship_type_id' => '18'
+        );
+
+        $vol_get_link = civicrm_api('Relationship', 'get', $vol_get_params);
+        if(empty($vol_get_link['values'])) {
+            $vol_create_link = civicrm_api('Relationship', 'create', $vol_create_params);
+        } else if(in_array($form_state['values']['company_scheme'], $vol_get_link['values'])) {
+            $vol_delete_link = civicrm_api('Relationship', 'delete', $vol_get_params);
+            $vol_create_link = civicrm_api('Relationship', 'create', $vol_create_params);
+        }
+    }
 
     if ($data->save()) {
         drupal_set_message(t('Details saved!'));
@@ -740,6 +772,12 @@ function av_volunteer_my_profile_skills_form_submit($form, $form_state) {
 
     global $user;
     $data = new My_Profile_Skills_Data($user->uid);
+
+    $data->contact['skills_strategy']       = $form_state['values']['skills_strategy'];
+    $data->contact['skills_business']       = $form_state['values']['skills_business'];
+    $data->contact['skills_solution']       = $form_state['values']['skills_solution'];
+    $data->contact['skills_technologies']   = $form_state['values']['skills_technologies'];
+    $data->contact['skills_service']        = $form_state['values']['askills_service'];
 
     $data->contact['level_of_qualification'] = $form_state['values']['achievement_level'];
     $data->contact['delete_cv_file']         = $form_state['values']['delete_cv_file'];
