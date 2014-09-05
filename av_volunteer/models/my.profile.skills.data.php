@@ -21,6 +21,11 @@ class My_Profile_Skills_Data extends Volunteer_Abstract_Data_Model {
      */
     public $custom_data = array(
         'level_of_qualification' => 'custom_70',
+        'skills_strategy'        => 'custom_97',
+        'skills_business'        => 'custom_98',
+        'skills_solution'        => 'custom_99',
+        'skills_technologies'    => 'custom_100',
+        'skills_service'         => 'custom_101',
         'cv_file_id'             => 'custom_95'
     );
 

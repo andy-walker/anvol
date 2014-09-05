@@ -27,6 +27,7 @@ class My_Profile_Details_Data extends Volunteer_Abstract_Data_Model {
      * @access public
      */
     public $custom_data = array(
+        'volunteer_link'       => 'custom_106',
         'charity_type'         => 'custom_11',
         'charity_no'           => 'custom_69',
         'charity_desc'         => 'custom_21',
@@ -158,6 +159,7 @@ class My_Profile_Details_Data extends Volunteer_Abstract_Data_Model {
             $this->contact = civicrm_api3('contact', 'getsingle', array(
                 'id' => $this->contact_id
             ) + array(
+                'return.' . $this->custom_data['volunteer_link']       => 1,
                 'return.' . $this->custom_data['newsletter']           => 1,
                 'return.' . $this->custom_data['email_opps']           => 1,
                 'return.' . $this->custom_data['reason']               => 1,
