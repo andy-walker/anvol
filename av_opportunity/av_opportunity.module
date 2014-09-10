@@ -389,3 +389,111 @@ function _av_opportunity_autoload($entity) {
         ));
 
 }
+
+
+/*
+* hook_cron for opportunity recommendation
+*/
+function av_opportunity_cron(){
+		civicrm_initialize( );
+		
+		//get all the volunteers from the system
+		$params_contact = array(
+		  'version' => 3,
+		  'sequential' => 1,
+		  'contact_type' => 'Individual',
+		  'contact_sub_type' => 'Volunteer',
+		  'contact_id' => 3195,// restricting to one record for testing
+		);
+		$results = civicrm_api('Contact', 'get', $params_contact);
+		//watchdog('karthikguru', '<pre>' . print_r($results, true) . '</pre>');
+		
+		//loop through each individual record
+		foreach($results['values'] as $contact) {
+			watchdog('karthikguru', '<pre>' . print_r($contact, true) . '</pre>');
+			//watchdog('karthikguru', '<pre>' . print_r($contact['uf_name'], true) . '</pre>');
+			
+			// Step 1 - get user regions
+			$id_contact = $contact['contact_id'];
+			$email_contact = $contact['display_name'];
+					
+			$params = array(
+			  'version' => 3,
+			  'sequential' => 1,
+			  'id' => $id_contact,
+			  'return' => 'custom_96',
+			);
+			$regions = civicrm_api('Contact', 'getvalue', $params);
+			$regions_values = convertRegionsFromText($regions);
+			watchdog('karthikguru', '<pre>' . print_r($regions_values, true) . '</pre>');
+			
+			//Step 2 - Get User Skills
+			$params_skills = array(
+			  'version' => 3,
+			  'sequential' => 1,
+			  'entity_id' => $id_contact,
+			  'return.custom_97' => 1,
+			  'return.custom_98' => 1,
+			  'return.custom_99' => 1,
+			  'return.custom_100' => 1,
+			  'return.custom_101' => 1,
+			);
+			$result_skills = civicrm_api('CustomValue', 'get', $params_skills);
+						
+			//watchdog('karthikguru_skills', '<pre>' . print_r($result_skills, true) . '</pre>');
+			//merge individuals skills into one single array
+			$final_skills = array();
+			foreach($result_skills[values] as $skills){
+				if(!empty($skills[latest])){
+					$final_skills = array_merge($final_skills,$skills[latest]);
+				}
+				//watchdog('karthikguru_loop', '<pre>' . print_r($skills[latest], true) . '</pre>');
+			}
+			
+			watchdog('karthikguru_finalskills', '<pre>' . print_r($final_skills, true) . '</pre>');
+			
+			//Step 3 - Query to get opportunity based on regions and skills
+			$query = new EntityFieldQuery();
+		
+			$query->entityCondition('entity_type', 'node')
+			  ->entityCondition('bundle', 'opportunity')
+			  ->propertyCondition('status', 1)
+			  //filter by regions
+			  ->fieldCondition('field_opportunity_region', 'tid', $regions_values, 'IN')
+			  //filter by skills
+			  ->fieldCondition('field_skilltype', 'value', $final_skills, 'IN');
+			
+			$result_oppo_region = $query->execute();
+			
+			watchdog('karthikguru', '<pre>' . print_r($result_oppo_region, true) . '</pre>');
+			
+			#send email
+			$params_mail = array(
+			'groupName' => 'msg_tpl_workflow_uf',
+			'valueName' => 'volunteer_opportunity_in_progress',
+			'contactId' => 1,
+			'tplParams' => array(
+			    'registration_info' => ''
+			),
+			'from'    => 'test@it4c.cirf.co.uk',
+			'toName'  => 'karthikeyan G',
+			'toEmail' => $email_contact,
+			);
+
+			CRM_Core_BAO_MessageTemplate::sendTemplate($params_mail);
+		   
+		}
+}
+
+ function convertRegionsFromText($regions_text) {
+
+        $region_ids = array(); 
+        watchdog('andyw', 'regions_text = ' . $regions_text);
+
+        foreach (explode(',', $regions_text) as $region)
+            $region_ids[] = str_replace(array('(', ')'), '', end(explode(' ', $region)));
+
+        watchdog('andyw', 'region_ids = <pre>' . print_r($region_ids, true) . '</pre>');
+        return $region_ids;
+        
+    }
