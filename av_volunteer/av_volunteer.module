@@ -5,6 +5,23 @@
  * andyw@circle, 24/05/2014
  */
 
+define('AV_VOLUNTEER_REGISTER_VOLUNTEER_WEBFORM', 479);
+define('AV_VOLUNTEER_REGISTER_CHARITY_WEBFORM', 22);
+
+/**
+ * Implementation of hook_civicrm_post
+ */
+function av_volunteer_civicrm_post($op, $objectName, $objectId, &$objectRef) {
+
+    # If created via the registration webform, save info, which submission hook will use to create a corresponding user.
+    # If not created via the registration form, nothing further will happen.
+    if ($objectName == 'Individual' and $op == 'create') {
+        $contact = &drupal_static('av_volunteer_pending_user_create');
+        $contact = $objectRef;
+    }
+        
+}
+
 /**
  * Implementation of hook_form_alter
  */
@@ -748,3 +765,61 @@ function av_volunteer_user_login(&$edit, $account) {
     }
 }
 
+/**
+ * Helper function to retrieve a given field name's value from a webform submission
+ * @param  StdClass $node        ref to webform node
+ * @param  StdClass $submission  ref to webform submission object
+ * @param  string   $field_name  name of field to retrieve
+ * @return mixed
+ */
+function av_volunteer_webform_get_value(&$node, &$submission, $field_name) {
+    
+    foreach ($node->webform['components'] as $index => $component)
+        if ($component['form_key'] == $field_name)
+            return $submission->data[$index][0];
+
+}
+
+/**
+ * Implementation of hook_webform_submission_insert
+ */
+function av_volunteer_webform_submission_insert($node, $submission) {
+
+    if (
+        
+        # check 'associate' contact was created and retrieve details
+        $contact = drupal_static('av_volunteer_pending_user_create')
+        # retrieve email address from the webform submission
+        and $email = av_volunteer_webform_get_value($node, $submission, 'civicrm_1_contact_1_email_email')
+
+    ) {
+        # check webform is a node we care about
+        # todo: may need to assign different roles depending on form
+        if (in_array($node->nid, array(
+            AV_VOLUNTEER_REGISTER_VOLUNTEER_WEBFORM,
+            AV_VOLUNTEER_REGISTER_CHARITY_WEBFORM
+        ))) {
+            
+            $roles = (AV_VOLUNTEER_REGISTER_VOLUNTEER_WEBFORM ? array(
+                2 => 'authenticated user',
+                7 => 'Individual Volunteer'
+            ) : array(
+                2 => 'authenticated user'
+            ));
+
+            # save user object
+            $user = user_save(null, array(
+                'name'   => $email,
+                'mail'   => $email,
+                'status' => 1,
+                'roles'  => $roles
+            ));
+
+            # if all went well, send confirmation email
+            _user_mail_notify('register_no_approval_required', $user);
+
+        }
+    
+    }
+
+}

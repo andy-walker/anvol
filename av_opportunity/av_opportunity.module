@@ -392,10 +392,10 @@ function _av_opportunity_autoload($entity) {
 
 
 /*
-* hook_cron for opportunity recommendation
+* hook_cron for opportunity recommendation email matching on regions and skills
 */
 function av_opportunity_cron(){
-		civicrm_initialize( );
+		civicrm_initialize();
 		
 		//get all the volunteers from the system
 		$params_contact = array(
@@ -463,24 +463,24 @@ function av_opportunity_cron(){
 			  //filter by skills
 			  ->fieldCondition('field_skilltype', 'value', $final_skills, 'IN');
 			
-			$result_oppo_region = $query->execute();
+			$opportunities_list = $query->execute();
 			
-			watchdog('karthikguru', '<pre>' . print_r($result_oppo_region, true) . '</pre>');
+			watchdog('karthikguru', '<pre>' . print_r($opportunities_list, true) . '</pre>');
 			
 			#send email
 			$params_mail = array(
 			'groupName' => 'msg_tpl_workflow_uf',
 			'valueName' => 'volunteer_opportunity_in_progress',
-			'contactId' => 1,
+			'contactId' => $id_contact,
 			'tplParams' => array(
-			    'registration_info' => ''
+			    'opportunities_list' => $opportunities_list,
 			),
 			'from'    => 'test@it4c.cirf.co.uk',
 			'toName'  => 'karthikeyan G',
 			'toEmail' => $email_contact,
 			);
 
-			CRM_Core_BAO_MessageTemplate::sendTemplate($params_mail);
+			//CRM_Core_BAO_MessageTemplate::sendTemplate($params_mail);
 		   
 		}
 }
@@ -496,4 +496,4 @@ function av_opportunity_cron(){
         watchdog('andyw', 'region_ids = <pre>' . print_r($region_ids, true) . '</pre>');
         return $region_ids;
         
-    }
+}

@@ -15,7 +15,7 @@
  * @return bool
  */
 function av_role_has_roles() {
-    watchdog('andyw', 'running');
+
     $arguments = func_get_args();
     $role_map  = _av_role_get_role_map();
 
@@ -23,8 +23,6 @@ function av_role_has_roles() {
     if (is_object(reset($arguments)))
         $user = array_shift($arguments); 
     else global $user;
-    
-    watchdog('andyw', 'user = <pre>' . print_r($user, true) . '</pre>');
 
     # iterate through roles, perform $role_map lookup, and attempt to match rid
     foreach ($arguments as $role)
@@ -43,7 +41,7 @@ function _av_role_get_role_map() {
     static $role_map = array(
         'anonymous user'        => 1, 
         'AbilityNet HR'         => 12,
-        'website admin'         => 4,
+        'website admin'         => 17,
         'Website editor'        => 5,
         'Individual Volunteer'  => 7,
         'Company Volunteer'     => 8,

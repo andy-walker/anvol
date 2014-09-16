@@ -1,5 +1,20 @@
 <?php
 
+function getContactPath($location) {
+    global $user;
+
+    $path = explode('/', $location);
+    
+    $uid_path = end($path);
+
+    if(count($path) <= 2 or $uid_path === $user->uid)
+        $uid = $user->uid;
+    else
+        $uid = $uid_path;
+
+    return $uid;
+}
+
 function av_volunteer_my_profile($form_state) {
     
     civicrm_initialize();
@@ -11,7 +26,19 @@ function av_volunteer_my_profile($form_state) {
     drupal_add_js($module_path . '/js/profile.js');
 
     # load data
-    $data = new My_Profile_Contact_Data($user->uid);
+    $uid = getContactPath($_GET['q']);
+    if($uid and in_array('Individual Volunteer', $user->roles) and $uid !== $user->uid) {
+        $form['volunteer_error'] = array(
+            '#type'   => 'item',
+            '#markup' => t('<h3>You do not have the permission to edit this user.</h3>')
+        );
+        return $form;
+    }
+    $data = new My_Profile_Contact_Data($uid);
+
+    #change page title
+    $name = $data->contact['first_name'] . ' ' . $data->contact['last_name'];
+    drupal_set_title("Profile of $name"); 
 
     $days = array(
         'mon' => '',
@@ -22,6 +49,13 @@ function av_volunteer_my_profile($form_state) {
         'sat' => '',
         'sun' => ''
     );
+
+    // if (av_role_has_roles('IT4C Administrator')) {
+    $form['profile_navigation'] = array(
+        '#type'     => 'item',
+        '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+    );
+    // }
 
     if (av_role_has_roles('Individual Volunteer', 'website admin')) {
         $form['volunteer_id'] = array(
@@ -281,8 +315,9 @@ function av_volunteer_my_profile_form_submit($form, &$form_state) {
 
     watchdog('andyw', 'form_state[values] = <pre>' . print_r($form_state['values'], true) . '</pre>');
    
-    global $user;
-    $data = new My_Profile_Contact_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Contact_Data($uid);
 
     $data->contact['prefix_id']          = $form_state['values']['title'];
     $data->contact['first_name']         = $form_state['values']['firstname'];
@@ -328,8 +363,14 @@ function av_volunteer_my_profile_details_tab($form_state) {
 
     civicrm_initialize();
 
-    global $user;
-    $data = new My_Profile_Details_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Details_Data($uid);
+    $contact = new My_Profile_Contact_Data($uid);
+
+    #change page title
+    $name = $contact->contact['first_name'] . ' ' . $contact->contact['last_name'];
+    drupal_set_title("Details for $name"); 
 
     $yes_no = array(
         '1' => t('Yes'),
@@ -360,8 +401,12 @@ function av_volunteer_my_profile_details_tab($form_state) {
 	}
 
     //watchdog('nathan', '<pre>' . print_r($data->contact, true) . '</pre>');
-
 	$form = array(
+
+        'profile_navigation' => array(
+            '#type'     => 'item',
+            '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+        ),
 
     	'volunteer_link'   => array(
     		'#type'    => 'checkbox',
@@ -445,8 +490,9 @@ function av_volunteer_my_profile_details_form_submit($form, &$form_state) {
 
     watchdog('andyw', 'running volunteer details submit handler');
 
-    global $user;
-    $data = new My_Profile_Details_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Details_Data($uid);
 
     $data->contact['volunteer_link']       = $form_state['values']['volunteer_link'];
     $data->contact['newsletter']           = $form_state['values']['monthly_newsletter'];
@@ -501,8 +547,9 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
     
     civicrm_initialize();
 
-    global $user;
-    $data = new My_Profile_Details_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Details_Data($uid);
 
     $yes_no = array(
         'yes' => t('Yes'),
@@ -512,6 +559,11 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
     $where_hear_options = array(0 => t('Select ...')) + $data->getOptions('where_did_you_hear_about_us__20140611140531');
 
     $form = array(
+
+        'profile_navigation' => array(
+        '#type'     => 'item',
+        '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+        ),
 
         'charity_id' => array(
             '#type'   => 'item',
@@ -571,8 +623,9 @@ function av_volunteer_my_profile_details_charity_form_submit($form, &$form_state
 
     watchdog('andyw', 'running details submit handler');
 
-    global $user;
-    $data = new My_Profile_Details_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Details_Data($uid);
 
     $data->charity['charity_type']       = $form_state['values']['charity_type'];
     $data->charity['charity_no']         = $form_state['values']['charity_no'];
@@ -593,8 +646,9 @@ function av_volunteer_my_profile_details_tab_regional_coordinator($form_state) {
 
     civicrm_initialize();
 
-    global $user;
-    $data = new My_Profile_Details_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Details_Data($uid);
 
     drupal_add_js("
         
@@ -612,6 +666,11 @@ function av_volunteer_my_profile_details_tab_regional_coordinator($form_state) {
     );
 
     $taxonomy = _av_volunteer_get_regions();
+
+    $form['profile_navigation'] =  array(
+        '#type'     => 'item',
+        '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+    );
 
     $form['region'] = array(
         '#type'          => 'select',
@@ -635,8 +694,9 @@ function av_volunteer_my_profile_details_regional_coordinator_form_submit($form,
 
     civicrm_initialize();
 
-    global $user;
-    $data = new My_Profile_Details_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Details_Data($uid);
 
     $data->contact['region'] = $form_state['values']['region'];
 
@@ -654,8 +714,14 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
 
     civicrm_initialize();
 
-    global $user;
-    $data = new My_Profile_Skills_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Skills_Data($uid);
+    $contact = new My_Profile_Contact_Data($uid);
+
+    #change page title
+    $name = $contact->contact['first_name'] . ' ' . $contact->contact['last_name'];
+    drupal_set_title("Skills for $name"); 
 
     module_load_include('inc', 'av_volunteer', 'av_volunteer.settings');
 
@@ -680,6 +746,11 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
     ), 'setting');
 
     $form += array(
+
+    'profile_navigation' => array(
+        '#type'     => 'item',
+        '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+        ),
         
         'achievement_level' => array(
             '#type'          => 'radios',
@@ -770,8 +841,9 @@ function av_volunteer_my_profile_skills_form_submit($form, $form_state) {
 
     civicrm_initialize();
 
-    global $user;
-    $data = new My_Profile_Skills_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Skills_Data($uid);
 
     $data->contact['skills_strategy']       = $form_state['values']['skills_strategy'];
     $data->contact['skills_business']       = $form_state['values']['skills_business'];
@@ -796,8 +868,16 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
 
     civicrm_initialize();
 
-    global $user;
-    $data = new My_Profile_Reference_Data($user->uid);
+    // global $user;
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Reference_Data($uid);
+
+    $contact = new My_Profile_Contact_Data($uid);
+
+    #change page title
+    $name = $contact->contact['first_name'] . ' ' . $contact->contact['last_name'];
+    drupal_set_title("References for $name");
+
 
     drupal_add_css(drupal_get_path('module', 'av_volunteer') . '/css/base.css');
 
@@ -807,6 +887,11 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
     foreach (range(0, --$num_references) as $index) {
 
         $number = $index + 1;
+
+        $form['profile_navigation'] = array(
+            '#type'     => 'item',
+            '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+        );
 
         $form['reference_' . $index] = array(
             '#type'        => 'fieldset',
@@ -850,7 +935,7 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
 
     }
 
-    if (av_role_has_roles('website admin', 'Assessor')) {
+    if (av_role_has_roles('website admin', 'Assessor', 'IT4C Administrator')) {
 
         $form['dbs_check'] = array(
             '#type'        => 'fieldset',
@@ -914,7 +999,8 @@ function av_volunteer_my_profile_references_form_submit($form, $form_state) {
     civicrm_initialize();
 
     global $user;
-    $data = new My_Profile_Reference_Data($user->uid);
+    $uid = getContactPath($_GET['q']);
+    $data = new My_Profile_Reference_Data($uid);
 
     $data->contact['reference1_name']    = $form_state['values']['reference_name0'];
     $data->contact['reference1_email']   = $form_state['values']['reference_email0'];
@@ -925,6 +1011,11 @@ function av_volunteer_my_profile_references_form_submit($form, $form_state) {
     $data->contact['reference2_email']   = $form_state['values']['reference_email1'];
     $data->contact['reference2_address'] = $form_state['values']['reference_address1'];
     $data->contact['reference2_phone']   = $form_state['values']['reference_phone1'];
+
+    $data->contact['dbs_completed']      = $form_state['values']['dbs_completed'];
+    $data->contact['dbs_became_active']  = $form_state['values']['dbs_became_active'];
+    $data->contact['dbs_certificate_no'] = $form_state['values']['dbs_certificate_no'];
+    $data->contact['dbs_id_no']          = $form_state['values']['dbs_id_no'];
     
     
     #Assign role of Volunteer with DBS once DBS date completed is entered on form save
