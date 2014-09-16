@@ -784,7 +784,7 @@ function av_volunteer_webform_get_value(&$node, &$submission, $field_name) {
  * Implementation of hook_webform_submission_insert
  */
 function av_volunteer_webform_submission_insert($node, $submission) {
-    
+
     watchdog('andyw', 'node = <pre>' . print_r($node, true) . '\n\nsubmission = ' . print_r($submission, true) . '</pre>');
 
     if (
@@ -818,8 +818,6 @@ function av_volunteer_webform_submission_insert($node, $submission) {
                 'status' => 1,
 
                 'roles'  => $roles
-
-                'roles'  => array(2 => 'authenticated user')
 
             ));
 
