@@ -118,6 +118,41 @@ function av_opportunity_node_presave($node) {
 
     }
 
+    # update date fields on opportunity status change
+    if($node->type == 'opportunity') {
+
+        $status = $node->field_opportunitystate['und'][0]['value'];
+        $today = date('Y-m-d H:i:s');
+
+
+        switch($status) {
+            case 'Allocated':
+                $node->field_date_allocated['und'][0]['value'] = $today;
+                break;
+            case 'On Hold':
+                $node->field_date_on_hold['und'][0]['value'] = $today;
+                break;
+            case 'Available':
+                $node->field_date_available['und'][0]['value'] = $today;
+                break;
+            case 'Under consideration':
+                $node->field_date_under_consideration['und'][0]['value'] = $today;
+                break;
+            case 'In Progress':
+                $node->field_date_in_progress['und'][0]['value'] = $today;
+                break;
+            case 'Work Completed':
+                $node->field_date_work_completed['und'][0]['value'] = $today;
+                break;
+            case 'Finished':
+                $node->field_date_finished['und'][0]['value'] = $today;
+                break;
+            case 'Withdrawn':
+                $node->field_date_withdrawn['und'][0]['value'] = $today;
+                break;
+        }
+    }
+
 }
 
 /**
@@ -143,7 +178,7 @@ function av_opportunity_node_update($node) {
     # create a relationship on assigned volunteer to the Charity
     if($node->type == 'opportunity' and isset($assignedVol) and !$flag++) {
 
-        watchdog('nathannode', '<pre>' . print_r($node, true) . '</pre>');
+        //watchdog('nathannode', '<pre>' . print_r($node, true) . '</pre>');
 
         civicrm_initialize();
 
@@ -230,8 +265,6 @@ function av_opportunity_node_update($node) {
                 )
             );
         }
-
-            //watchdog('nathannode', '<pre>' . print_r($OppRelationship, true) . '</pre>');
 
             $relID = $OppRelationship['id'];
 
