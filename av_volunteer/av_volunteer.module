@@ -801,9 +801,8 @@ function av_volunteer_webform_submission_insert($node, $submission) {
             AV_VOLUNTEER_REGISTER_VOLUNTEER_WEBFORM,
             AV_VOLUNTEER_REGISTER_CHARITY_WEBFORM
         ))) {
-            
 
-            $roles = (AV_VOLUNTEER_REGISTER_VOLUNTEER_WEBFORM ? array(
+            $roles = (AV_VOLUNTEER_REGISTER_VOLUNTEER_WEBFORM == $node->nid ? array(
                 2 => 'authenticated user',
                 7 => 'Individual Volunteer'
             ) : array(

@@ -50,14 +50,19 @@ function av_volunteer_my_profile($form_state) {
         'sun' => ''
     );
 
+    $form_tabs_volunteer = '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>';
+    $form_tabs_charity = '<a href="/charity/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/charity/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a>';
+
+    $navigation = av_role_has_roles('Individual Volunteer', 'IT4C Administrator') ? $form_tabs_volunteer : $form_tabs_charity;
+
     // if (av_role_has_roles('IT4C Administrator')) {
     $form['profile_navigation'] = array(
         '#type'     => 'item',
-        '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+        '#markup'   => $navigation
     );
     // }
 
-    if (av_role_has_roles('Individual Volunteer', 'website admin')) {
+    if (av_role_has_roles('Individual Volunteer', 'IT4C Administrator')) {
         $form['volunteer_id'] = array(
             '#type'   => 'item',
             '#title'  => t('Volunteer ID') . ':',
@@ -113,7 +118,7 @@ function av_volunteer_my_profile($form_state) {
         '#default_value' => isset($data->address['street_address']) ? $data->address['street_address'] : ''
     );
 
-    if (av_role_has_roles('Charity Rep', 'Company Rep')) {
+    if (av_role_has_roles('Charity Rep', 'Company Rep', 'Individual Volunteer')) {
 
         $form['city'] = array(
             '#type'          => 'textfield',
@@ -271,6 +276,14 @@ function av_volunteer_my_profile($form_state) {
 
     }
 
+    $volunteer = user_load($uid);
+
+    $form['volunteer_is_charity_rep'] = array(
+        '#type'             => 'checkbox',
+        '#title'            => t('I\'m a Charity Rep'),
+        '#default_value'    => in_array('Charity Rep', $volunteer->roles) ? 1 : 0
+    );
+
     // redirect to message on submission
     $form['#action'] = $form['#action'].'#message-details';
 
@@ -342,7 +355,36 @@ function av_volunteer_my_profile_form_submit($form, &$form_state) {
         'evening'   => $form_state['values']['best_time_evening']
     ));
 
+        #build email
+        $to = $data->email['email'];
+        $from = variable_get('site_mail', '');
+
+        $subject = t('Your volunteer status has changed.');
+        $body = t('The volunteer status for ' . $data->contact['first_name'] . ', ' . $data->contact['last_name'] . ' has been set to ' . $data->contact['status']);
+
+        $params = array(
+            'subject'   => $subject,
+            'body'      => $body
+        );
+
     if ($data->save()) {
+        $account = user_load($uid);
+
+        if($form_state['values']['volunteer_is_charity_rep'] > 0) {
+            user_save($account, array(
+                'roles' => array(
+                        2 => 'authenticated user',
+                        9 => 'Charity Rep'
+                    )
+                )
+            );
+        }
+        #send email on volunteer status cancelled/resigned
+        if($form['status']['#default_value'] != $data->contact['status']) {
+            if(in_array($data->contact['status'], array('Resigned', 'Cancelled'))) {
+                drupal_mail('av_volunteer_my_profile', 'status_change', $to, language_default(), $params, $from);
+            }
+        }
         drupal_set_message(t('Details saved!'));
         return;
     }
@@ -400,7 +442,6 @@ function av_volunteer_my_profile_details_tab($form_state) {
 		$company_volunteer_options[$company_value['contact_id']] = $company_value['display_name'];
 	}
 
-    //watchdog('nathan', '<pre>' . print_r($data->contact, true) . '</pre>');
 	$form = array(
 
         'profile_navigation' => array(
@@ -558,11 +599,16 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
 
     $where_hear_options = array(0 => t('Select ...')) + $data->getOptions('where_did_you_hear_about_us__20140611140531');
 
+    $form_tabs_volunteer = '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>';
+    $form_tabs_charity = '<a href="/charity/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/charity/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a>';
+
+    $navigation = av_role_has_roles('Individual Volunteer', 'IT4C Administrator') ? $form_tabs_volunteer : $form_tabs_charity;
+
     $form = array(
 
         'profile_navigation' => array(
-        '#type'     => 'item',
-        '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+            '#type'     => 'item',
+            '#markup'   => $navigation
         ),
 
         'charity_id' => array(
@@ -605,7 +651,13 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
             '#options'       => $where_hear_options,
             '#default_value' => isset($data->charity['where_hear_charity']) ? $data->charity['where_hear_charity'] : 0
         ),
-
+	//field only visible to admin roles
+	'admin_charity_approve' => (av_role_has_roles('website admin', 'IT4C Administrator')? array(
+		    '#type'  => 'checkbox',
+		    '#field_suffix' => t('Ok'),
+	):array()),
+	
+	
         'submit' => array(
             '#type'  => 'submit',
             '#value' => t('Save')
@@ -623,7 +675,7 @@ function av_volunteer_my_profile_details_charity_form_submit($form, &$form_state
 
     watchdog('andyw', 'running details submit handler');
 
-    // global $user;
+    //global $user;
     $uid = getContactPath($_GET['q']);
     $data = new My_Profile_Details_Data($uid);
 
@@ -631,7 +683,19 @@ function av_volunteer_my_profile_details_charity_form_submit($form, &$form_state
     $data->charity['charity_no']         = $form_state['values']['charity_no'];
     $data->charity['charity_desc']       = $form_state['values']['charity_description'];
     $data->charity['where_hear_charity'] = $form_state['values']['where_you_hear'];
-
+    
+    $thisuser = user_load($uid);
+    
+    // IF "ok" selected then assign Charity rep role to the user
+    if(!isset($thisuser->roles[9]) && isset($form_state['values']['admin_charity_approve'])){  //Check if the user has the role already
+	$role_name = "Charity Rep";
+	$new_role[9] = $role_name;
+	$all_roles = $thisuser->roles + $new_role; // Add new role to existing roles.
+	user_save($thisuser, array('roles' => $all_roles));
+	drupal_set_message(t('User Charity with charity rep role updated!'));
+    }
+    
+    
     if ($data->save()) {
         drupal_set_message(t('Details saved!'));
         return;
@@ -944,6 +1008,13 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
             '#collapsible' => true
         );
 
+        $form['dbs_check']['dbs_started'] = array(
+            '#type'                => 'date_popup',
+            '#title'               => t('Date DBS Started'),
+            '#date_label_position' => '',
+            '#date_format'         => 'd/m/Y'
+        );
+
         $form['dbs_check']['dbs_completed'] = array(
             '#type'                => 'date_popup',
             '#title'               => t('Date DBS Completed'),
@@ -983,6 +1054,23 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
         );
 
     }
+    
+    //Adding admin/analyst notes field
+     if (av_role_has_roles('website admin', 'Analyst', 'IT4C Administrator','Regional Controller','Regional Co-ordinator','Regional Coordinator')) {
+	$form['admin_notes'] = array(
+		'#type'        => 'fieldset',
+		'#title'       => 'Admin Notes',
+		'#description' => t('(Admin Notes)'),
+		'#collapsible' => true
+	);
+
+	$form['admin_notes']['admin_notes'] = array(
+		'#type'                => 'textarea',
+		'#title'               => t('Admin Notes'),
+		'#size'  	       => 300,
+		'#default_value' => isset($data->contact["admin_notes"]) ? $data->contact["admin_notes"] : ''
+	);
+    }
 
     $form['submit'] = array(
         '#type'  => 'submit',
@@ -1012,10 +1100,14 @@ function av_volunteer_my_profile_references_form_submit($form, $form_state) {
     $data->contact['reference2_address'] = $form_state['values']['reference_address1'];
     $data->contact['reference2_phone']   = $form_state['values']['reference_phone1'];
 
+    $data->contact['dbs_started']        = $form_state['values']['dbs_started'];
     $data->contact['dbs_completed']      = $form_state['values']['dbs_completed'];
     $data->contact['dbs_became_active']  = $form_state['values']['dbs_became_active'];
     $data->contact['dbs_certificate_no'] = $form_state['values']['dbs_certificate_no'];
     $data->contact['dbs_id_no']          = $form_state['values']['dbs_id_no'];
+    
+    $data->contact['admin_notes']        = $form_state['values']['admin_notes'];
+    
     
     
     #Assign role of Volunteer with DBS once DBS date completed is entered on form save
@@ -1026,8 +1118,26 @@ function av_volunteer_my_profile_references_form_submit($form, $form_state) {
      	 user_save($user, array('roles' => $all_roles));
      	// drupal_set_message(t('User Volunteer with DBS role updated!'));
     }
+
+    $vol = new My_Profile_Contact_Data($uid);
+
+        #build email
+        $to = "$vol->email['email'], $from";
+        $from = variable_get('site_mail', '');
+
+        $subject = t('DBS Check has been started.');
+        $body = t('The DBS Check process has started on ' . $data->contact['dbs_started']);
+
+        $params = array(
+            'subject'   => $subject,
+            'body'      => $body
+        );
     
     if ($data->save()) {
+
+        if(!empty($data->contact['dbs_started']) && empty($data->contact['dbs_completed'])) {
+            drupal_mail('av_volunteer_my_profile', 'dbs_started', $to, language_default(), $params, $from);
+        }
         drupal_set_message(t('Details saved!'));
         return;
     }
@@ -1085,4 +1195,19 @@ function av_volunteer_my_profile_password_form_submit($form, $form_state) {
 
     drupal_set_message(t('Password updated!'));
 
+}
+
+function av_volunteer_my_profile_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'status_change':
+      $message['subject'] = $params['subject'];
+      $message['body'] = array();
+      $message['body'][] = $params['body'];
+    break;
+    case 'dbs_started':
+      $message['subject'] = $params['subject'];
+      $message['body'] = array();
+      $message['body'][] = $params['body'];
+    break;
+    }
 }

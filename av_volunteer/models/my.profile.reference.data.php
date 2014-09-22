@@ -28,10 +28,12 @@ class My_Profile_Reference_Data extends Volunteer_Abstract_Data_Model {
         'reference2_email'   => 'custom_103',
         'reference2_address' => 'custom_80',
         'reference2_phone'   => 'custom_89',
+        'dbs_started'        => 'custom_107',
         'dbs_completed'      => 'custom_61',
         'dbs_became_active'  => 'custom_76',
         'dbs_certificate_no' => 'custom_62',     
         'dbs_id_no'          => 'custom_67',
+        'admin_notes'	     => 'custom_108',
     );
 
     /**
