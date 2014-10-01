@@ -425,30 +425,32 @@ function _av_opportunity_autoload($entity) {
 
 
 /*
-* hook_cron for opportunity recommendation email matching on regions and skills
+* hook_cron for opportunity recommendation email matching on regions and skills. Loops through every indidvidual volunteers gets their skills and regions in array and
+* matches opportunity records with the details and sends mails to everyone with a link for the individual opportunities.
 */
 function av_opportunity_cron(){
+
 		civicrm_initialize();
 		
-		//get all the volunteers from the system
+		#get all the volunteers from the system , add additional filters here to restrict the number of users returned
 		$params_contact = array(
 		  'version' => 3,
 		  'sequential' => 1,
 		  'contact_type' => 'Individual',
 		  'contact_sub_type' => 'Volunteer',
-		  'contact_id' => 3195,// restricting to one record for testing
+		  'contact_id' => 3195,// restricting to one record for testing , comment out this line before executing cron
 		);
 		$results = civicrm_api('Contact', 'get', $params_contact);
-		//watchdog('karthikguru', '<pre>' . print_r($results, true) . '</pre>');
+		#watchdog('karthikguru_mainresults', '<pre>' . print_r($results, true) . '</pre>');
 		
-		//loop through each individual record
+		#loop through each individual record
 		foreach($results['values'] as $contact) {
-			watchdog('karthikguru', '<pre>' . print_r($contact, true) . '</pre>');
-			//watchdog('karthikguru', '<pre>' . print_r($contact['uf_name'], true) . '</pre>');
+			#watchdog('karthikguru', '<pre>' . print_r($contact, true) . '</pre>');
+			#watchdog('karthikguru', '<pre>' . print_r($contact['uf_name'], true) . '</pre>');
 			
-			// Step 1 - get user regions
+			# Step 1 - get user regions
 			$id_contact = $contact['contact_id'];
-			$email_contact = $contact['display_name'];
+			$email_contact = $contact['email'];
 					
 			$params = array(
 			  'version' => 3,
@@ -456,11 +458,13 @@ function av_opportunity_cron(){
 			  'id' => $id_contact,
 			  'return' => 'custom_96',
 			);
-			$regions = civicrm_api('Contact', 'getvalue', $params);
-			$regions_values = convertRegionsFromText($regions);
-			watchdog('karthikguru', '<pre>' . print_r($regions_values, true) . '</pre>');
 			
-			//Step 2 - Get User Skills
+			$regions = civicrm_api('Contact', 'getvalue', $params);
+			$regions_values = convertRegionsFromTextOpportunity($regions);
+			
+			#watchdog('karthikguru_regions', '<pre>' . print_r($regions_values, true) . '</pre>');
+			
+			#Step 2 - Get User Skills
 			$params_skills = array(
 			  'version' => 3,
 			  'sequential' => 1,
@@ -473,60 +477,80 @@ function av_opportunity_cron(){
 			);
 			$result_skills = civicrm_api('CustomValue', 'get', $params_skills);
 						
-			//watchdog('karthikguru_skills', '<pre>' . print_r($result_skills, true) . '</pre>');
-			//merge individuals skills into one single array
+			#watchdog('karthikguru_skills', '<pre>' . print_r($result_skills, true) . '</pre>');
+				
+			#merge individuals skills into one single array
 			$final_skills = array();
 			foreach($result_skills[values] as $skills){
 				if(!empty($skills[latest])){
 					$final_skills = array_merge($final_skills,$skills[latest]);
 				}
-				//watchdog('karthikguru_loop', '<pre>' . print_r($skills[latest], true) . '</pre>');
+				
 			}
-			
-			watchdog('karthikguru_finalskills', '<pre>' . print_r($final_skills, true) . '</pre>');
-			
-			//Step 3 - Query to get opportunity based on regions and skills
+									
+			#Step 3 - Query to get opportunity based on regions and skills
 			$query = new EntityFieldQuery();
 		
 			$query->entityCondition('entity_type', 'node')
 			  ->entityCondition('bundle', 'opportunity')
 			  ->propertyCondition('status', 1)
-			  //filter by regions
-			  ->fieldCondition('field_opportunity_region', 'tid', $regions_values, 'IN')
-			  //filter by skills
-			  ->fieldCondition('field_skilltype', 'value', $final_skills, 'IN');
+			  # filter by skills
+			  ->fieldCondition('field_skilltype', 'value', $final_skills, 'IN')
+			  #filter by regions
+			 ->fieldCondition('field_opportunity_region', 'tid', $regions_values, 'IN');
+			  
 			
 			$opportunities_list = $query->execute();
 			
-			watchdog('karthikguru', '<pre>' . print_r($opportunities_list, true) . '</pre>');
+			#watchdog('karthikguru_oppo', '<pre>' . print_r($opportunities_list[node], true) . '</pre>');
+			 
+			$html_body = "<h2>We currently have volunteering opportunities that match your skill set. Follow any of these links to find out more details</h2><ol>";
 			
-			#send email
-			$params_mail = array(
-			'groupName' => 'msg_tpl_workflow_uf',
-			'valueName' => 'volunteer_opportunity_in_progress',
-			'contactId' => $id_contact,
-			'tplParams' => array(
-			    'opportunities_list' => $opportunities_list,
-			),
-			'from'    => 'test@it4c.cirf.co.uk',
-			'toName'  => 'karthikeyan G',
-			'toEmail' => $email_contact,
-			);
-
-			//CRM_Core_BAO_MessageTemplate::sendTemplate($params_mail);
-		   
+			foreach($opportunities_list[node] as $nodes){
+				$node_temp = node_load($nodes->nid);
+				
+				$html_body = $html_body . '<li><a href="/node/'. $nodes->nid .'">'. $node_temp->title .'</a></li>';
+				
+				#watchdog('karthikguru_status_email','<pre>' . print_r($node_temp, true) . '</pre>');
+			}
+			
+			$html_body = $html_body . '</ol>';
+			
+			#mimemail message sending starts
+			$message = array(
+			  'to' => $email_contact,
+			  'subject' => t('Volunteering Opportunites matching your regions and skills'),
+			  'body' =>$html_body,
+			  'headers'=>array(),   
+			); 
+						
+			$MimeMailSystem = drupal_mail_system('mimemail', 'av_opportunity');
+			$message = $MimeMailSystem->format($message);
+			
+			if($MimeMailSystem->mail($message)){
+			 	#watchdog('karthikguru_status_email', 'sent');
+			}
+			else	{
+			  	#watchdog('karthikguru_status_email', 'failure');
+			}
+			
 		}
 }
 
- function convertRegionsFromText($regions_text) {
+
+/*
+* utility function to convert regions from text
+*/
+
+ function convertRegionsFromTextOpportunity($regions_text) {
 
         $region_ids = array(); 
-        watchdog('andyw', 'regions_text = ' . $regions_text);
+       // watchdog('andyw', 'regions_text = ' . $regions_text);
 
         foreach (explode(',', $regions_text) as $region)
             $region_ids[] = str_replace(array('(', ')'), '', end(explode(' ', $region)));
 
-        watchdog('andyw', 'region_ids = <pre>' . print_r($region_ids, true) . '</pre>');
+       // watchdog('andyw', 'region_ids = <pre>' . print_r($region_ids, true) . '</pre>');
         return $region_ids;
         
 }
