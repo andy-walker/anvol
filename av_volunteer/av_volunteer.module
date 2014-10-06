@@ -812,10 +812,9 @@ function av_volunteer_webform_submission_insert($node, $submission) {
 
             # save user object
             $user = user_save(null, array(
-                'name'   => $email,
+                'name'   => str_replace('+', '_', $email),
                 'mail'   => $email,
                 'status' => 1,
-
                 'roles'  => $roles
 
             ));
