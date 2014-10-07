@@ -41,7 +41,7 @@ function _av_role_get_role_map() {
     static $role_map = array(
         'anonymous user'        => 1, 
         'AbilityNet HR'         => 12,
-        'website admin'         => 17,
+        'website admin'         => 3,
         'Website editor'        => 5,
         'Individual Volunteer'  => 7,
         'Company Volunteer'     => 8,
