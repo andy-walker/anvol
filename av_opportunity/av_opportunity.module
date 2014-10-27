@@ -47,6 +47,12 @@ function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
                )
             );
 
+            # disable the following fields in edit mode when user is a charity rep
+            if (is_numeric($nid = arg(1)) and arg(2) == 'edit' and av_role_has_roles('Charity Rep')) {
+                $form['field_charity_name']['#disabled'] = true;
+                $form['field_cid']['#disabled'] = true;
+            }
+
             break;
         
         

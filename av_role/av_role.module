@@ -8,6 +8,10 @@
  * @package av_role
  */
 
+function av_role_is_admin($uid) { 
+    return av_role_has_roles(user_load($uid), 'website admin', 'IT4C Administrator', 'Regional Co-ordinator', 'Analyst');
+}
+
 /**
  * Module basically provides this function for role lookup
  * First arg can be a user object followed by a list of internal role names, or args can be just a list of role names,
@@ -28,6 +32,52 @@ function av_role_has_roles() {
     foreach ($arguments as $role)
         if (isset($user->roles[$role_map[$role]]))
             return true;
+
+    return false;
+
+}
+
+/**
+ * Function like the one above - this version checks if the last part of the url is a uid and,
+ * if so, checks the roles of that user - otherwise checks the roles of the currently logged in user
+ * @return bool
+ */
+function av_role_has_roles_inherit() {
+
+    $arguments = func_get_args();
+    $role_map  = _av_role_get_role_map(); 
+    $url_args  = explode('/', $_GET['q']);
+
+    if (count($url_args) >= 3 and is_numeric($subject_uid = end($url_args))) {
+        
+        # perform additional check that logged in user is an admin before going down this
+        # route - the end result is the ability to edit someone else's contact record, so
+        # double-check there are a privileged user 
+        global $user;
+        
+        if (av_role_is_admin($user->uid)) {
+            
+            # if so, load the user who's roles we're interested in
+            $subject_user = user_load($subject_uid);
+        
+            # iterate through roles, perform $role_map lookup, and attempt to match rid
+            foreach ($arguments as $role)
+                if (isset($subject_user->roles[$role_map[$role]]))
+                    return true;
+
+            return false;
+
+        } 
+    
+    # if not will check the roles of the currently logged in user
+    } else global $user;
+    
+    # iterate through roles, perform $role_map lookup, and attempt to match rid
+    foreach ($arguments as $role)
+        if (isset($user->roles[$role_map[$role]]))
+            return true;
+    
+    return false;
 
 }
 

@@ -7,7 +7,7 @@ function getContactPath($location) {
     
     $uid_path = end($path);
 
-    if(count($path) <= 2 or $uid_path === $user->uid)
+    if(count($path) <= 2 or $uid_path === $user->uid or !is_numeric($uid))
         $uid = $user->uid;
     else
         $uid = $uid_path;
@@ -27,18 +27,18 @@ function av_volunteer_my_profile($form_state) {
 
     # load data
     $uid = getContactPath($_GET['q']);
-    if($uid and in_array('Individual Volunteer', $user->roles) and $uid !== $user->uid) {
-        $form['volunteer_error'] = array(
-            '#type'   => 'item',
-            '#markup' => t('<h3>You do not have the permission to edit this user.</h3>')
-        );
-        return $form;
+
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) {
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
     }
+
     $data = new My_Profile_Contact_Data($uid);
 
     #change page title
     $name = $data->contact['first_name'] . ' ' . $data->contact['last_name'];
-    drupal_set_title("Profile of $name"); 
+    drupal_set_title("Profile for $name"); 
 
     $days = array(
         'mon' => '',
@@ -50,22 +50,17 @@ function av_volunteer_my_profile($form_state) {
         'sun' => ''
     );
 
-    $form_tabs_volunteer = '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>';
-    $form_tabs_charity = '<a href="/charity/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/charity/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a>';
-
-    $navigation = av_role_has_roles('Individual Volunteer', 'IT4C Administrator') ? $form_tabs_volunteer : $form_tabs_charity;
-
-    // if (av_role_has_roles('IT4C Administrator')) {
     $form['profile_navigation'] = array(
         '#type'     => 'item',
-        '#markup'   => $navigation
+        '#markup'   => theme('av_volunteer-profile-tabs', array(
+            'target_uid' => $uid
+        ))
     );
-    // }
 
     if (av_role_has_roles('Individual Volunteer', 'IT4C Administrator')) {
         $form['volunteer_id'] = array(
             '#type'   => 'item',
-            '#title'  => t('Volunteer ID') . ':',
+            '#title'  => t('Contact ID') . ':',
             '#markup' => $data->contact['id']
         );
     }
@@ -99,7 +94,7 @@ function av_volunteer_my_profile($form_state) {
         '#default_value' => isset($data->contact['last_name']) ? $data->contact['last_name'] : ''
     );
 
-    if (av_role_has_roles('Individual Volunteer', 'website admin', 'IT4C Administrator')) {
+    if (av_role_has_roles_inherit('Individual Volunteer')) {
 
         $form['known_as'] = array(
             '#type'          => 'textfield',
@@ -118,7 +113,7 @@ function av_volunteer_my_profile($form_state) {
         '#default_value' => isset($data->address['street_address']) ? $data->address['street_address'] : ''
     );
 
-    if (av_role_has_roles('Charity Rep', 'Company Rep', 'Individual Volunteer')) {
+    if (av_role_has_roles_inherit('Charity Rep', 'Company Rep', 'Individual Volunteer')) {
 
         $form['city'] = array(
             '#type'          => 'textfield',
@@ -133,14 +128,6 @@ function av_volunteer_my_profile($form_state) {
             '#size'  => 31
         );
 
-        /*
-        $form['county'] = array(
-            '#type'          => 'select',
-            '#title'         => t('County'),
-            '#options'       => array(0 => t('Select...')) + $data->getOptions('state_province'),
-            '#default_value' => isset($data->address['state_province_id']) ? $data->address['state_province_id'] : 0
-        );
-        */
         drupal_add_js("
             
             jQuery(function() {
@@ -206,7 +193,7 @@ function av_volunteer_my_profile($form_state) {
         '#default_value' => isset($data->email['email']) ? $data->email['email'] : ''
     );
 
-    if (av_role_has_roles('Individual Volunteer', 'website admin', 'IT4C Administrator')) {
+    if (av_role_has_roles_inherit('Individual Volunteer')) {
 
         # status - relevant to Individual Volunteer only
         $statuses = $data->getOptions('volunteer_status_20140625125929');
@@ -224,7 +211,7 @@ function av_volunteer_my_profile($form_state) {
     }
 
     # best time to contact - Individual Volunteer and Client Rep
-    if (av_role_has_roles('Individual Volunteer', 'Company Rep', 'website admin')) {
+    if (av_role_has_roles_inherit('Individual Volunteer', 'Company Rep')) {
 
         $form['best_time_pre'] = array(
             '#markup' => '<div class="best-time-label">' . t('Your Availability') . '</div>' . "\n"
@@ -278,14 +265,15 @@ function av_volunteer_my_profile($form_state) {
 
     $volunteer = user_load($uid);
 
-    $form['volunteer_is_charity_rep'] = array(
-        '#type'             => 'checkbox',
-        '#title'            => t('I\'m a Charity Rep'),
-        '#default_value'    => in_array('Charity Rep', $volunteer->roles) ? 1 : 0
-    );
+    if (av_role_has_roles('website admin', 'IT4C Administrator'))
+        $form['volunteer_is_charity_rep'] = array(
+            '#type'             => 'checkbox',
+            '#title'            => t('Approve the Charity'),
+            '#default_value'    => in_array('Charity Rep', $volunteer->roles) ? 1 : 0
+        );
 
     // redirect to message on submission
-    $form['#action'] = $form['#action'].'#message-details';
+    $form['#action'] .= '#message-details';
 
     $form['submit'] = array(
         '#type'        => 'submit',
@@ -328,8 +316,15 @@ function av_volunteer_my_profile_form_submit($form, &$form_state) {
 
     watchdog('andyw', 'form_state[values] = <pre>' . print_r($form_state['values'], true) . '</pre>');
    
-    // global $user;
+    global $user;
     $uid = getContactPath($_GET['q']);
+
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
     $data = new My_Profile_Contact_Data($uid);
 
     $data->contact['prefix_id']          = $form_state['values']['title'];
@@ -396,7 +391,7 @@ function av_volunteer_my_profile_form_submit($form, &$form_state) {
 function av_volunteer_my_profile_details_tab($form_state) {
 
     # for charity reps, display a different form here
-    if (av_role_has_roles('Charity Rep'))
+    if (av_role_has_roles_inherit('Charity Rep'))
         return av_volunteer_my_profile_details_tab_charity($form_state);
 
     # likewise for regional co-ordinators, show them a different form too
@@ -405,9 +400,16 @@ function av_volunteer_my_profile_details_tab($form_state) {
 
     civicrm_initialize();
 
-    // global $user;
+    global $user;
     $uid = getContactPath($_GET['q']);
-    $data = new My_Profile_Details_Data($uid);
+
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
+    $data    = new My_Profile_Details_Data($uid);
     $contact = new My_Profile_Contact_Data($uid);
 
     #change page title
@@ -420,40 +422,42 @@ function av_volunteer_my_profile_details_tab($form_state) {
     );
 
     $where_hear_options = array(0 => t('Select ...')) + $data->getOptions('where_did_you_hear_about_us__20140611140531');
-	
-	# change volunteer to company link contact sub type
-	$company_params = array(
-	  'version' => 3,
-	  'sequential' => 1,
-	  'contact_type' => 'Organization',
-	  'contact_sub_type' => 'CSR_Company',
+    
+    # change volunteer to company link contact sub type
+    $company_params = array(
+      'version' => 3,
+      'sequential' => 1,
+      'contact_type' => 'Organization',
+      'contact_sub_type' => 'CSR_Company',
       'rowCount'    => 50,
       'return'  => array(
         'contact_id',
         'display_name'
         )
-	);
-	
-	$company_volunteer_values = civicrm_api('Contact', 'GET', $company_params);
+    );
+    
+    $company_volunteer_values = civicrm_api('Contact', 'GET', $company_params);
     
     # separate the important information to use with a field
-	$company_volunteer_options = array();
-	foreach($company_volunteer_values['values'] as $key => $company_value) {
-		$company_volunteer_options[$company_value['contact_id']] = $company_value['display_name'];
-	}
+    $company_volunteer_options = array();
+    foreach($company_volunteer_values['values'] as $key => $company_value) {
+        $company_volunteer_options[$company_value['contact_id']] = $company_value['display_name'];
+    }
 
-	$form = array(
+    $form = array(
 
         'profile_navigation' => array(
             '#type'     => 'item',
-            '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+            '#markup'   => theme('av_volunteer-profile-tabs', array(
+                'target_uid' => $uid
+            ))
         ),
 
-    	'volunteer_link'   => array(
-    		'#type'    => 'checkbox',
-    		'#title'   => t('I\'m part of a Corporate Volunteering Scheme'),
+        'volunteer_link'   => array(
+            '#type'    => 'checkbox',
+            '#title'   => t('I\'m part of a Corporate Volunteering Scheme'),
             '#default_value' => isset($data->contact['volunteer_link']) ? $data->contact['volunteer_link'] : 1
-    	),
+        ),
 
         'company_scheme'    => array(
             '#type'     => 'select',
@@ -493,11 +497,11 @@ function av_volunteer_my_profile_details_tab($form_state) {
             '#title'    => t('Share My Details with Charities'),
             '#options'       => $data->getOptions('sharing_details_20120112174737'),
             '#default_value' => isset($data->contact['sharing']) ? $data->contact['sharing'] : 'Full details',
-        	    '#states'	     => array(
-        		  'visible'      => array(
-        		      ':input[name="work_type[Charities]"]' =>
-        	       array('checked' => TRUE),
-        		),
+                '#states'        => array(
+                  'visible'      => array(
+                      ':input[name="work_type[Charities]"]' =>
+                   array('checked' => TRUE),
+                ),
             ),
         ),
 
@@ -531,8 +535,15 @@ function av_volunteer_my_profile_details_form_submit($form, &$form_state) {
 
     watchdog('andyw', 'running volunteer details submit handler');
 
-    // global $user;
+    global $user;
     $uid = getContactPath($_GET['q']);
+    
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
     $data = new My_Profile_Details_Data($uid);
 
     $data->contact['volunteer_link']       = $form_state['values']['volunteer_link'];
@@ -588,8 +599,15 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
     
     civicrm_initialize();
 
-    // global $user;
+    global $user;
     $uid = getContactPath($_GET['q']);
+    
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
     $data = new My_Profile_Details_Data($uid);
 
     $yes_no = array(
@@ -599,21 +617,21 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
 
     $where_hear_options = array(0 => t('Select ...')) + $data->getOptions('where_did_you_hear_about_us__20140611140531');
 
-    $form_tabs_volunteer = '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>';
-    $form_tabs_charity = '<a href="/charity/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/charity/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a>';
-
-    $navigation = av_role_has_roles('Individual Volunteer', 'IT4C Administrator') ? $form_tabs_volunteer : $form_tabs_charity;
-
     $form = array(
 
         'profile_navigation' => array(
             '#type'     => 'item',
-            '#markup'   => $navigation
+            '#markup'   => theme('av_volunteer-profile-tabs', array(
+                'target_uid' => $uid
+            ))
         ),
+        
+        'contact_for' => array(),
 
+        /*
         'charity_id' => array(
             '#type'   => 'item',
-            '#title'  => t('Charity ID') . ':',
+            '#title'  => t('Contact ID') . ':',
             '#markup' => isset($data->charity['id']) ? $data->charity['id'] : ''
         ),
 
@@ -622,6 +640,7 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
             '#title'  => t('Charity Name') . ':',
             '#markup' => isset($data->charity['organization_name']) ? $data->charity['organization_name'] : ''
         ),
+        */
 
         'charity_type' => array(
             '#type'          => 'select',
@@ -651,19 +670,28 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
             '#options'       => $where_hear_options,
             '#default_value' => isset($data->charity['where_hear_charity']) ? $data->charity['where_hear_charity'] : 0
         ),
-	//field only visible to admin roles
-	'admin_charity_approve' => (av_role_has_roles('website admin', 'IT4C Administrator')? array(
-		    '#type'  => 'checkbox',
-		    '#field_suffix' => t('Ok'),
-	):array()),
-	
-	
+    //field only visible to admin roles
+    'admin_charity_approve' => (av_role_has_roles('website admin', 'IT4C Administrator')? array(
+            '#type'  => 'checkbox',
+            '#field_suffix' => t('Ok'),
+    ):array()),
+    
+    
         'submit' => array(
             '#type'  => 'submit',
             '#value' => t('Save')
         )
 
     );
+
+    if (isset($form['contact_for']))
+        $form['contact_for'] = array(
+            '#type'   => 'item',
+            '#title'  => t('Contact for') . ':',
+            '#markup' => "<a href='/charity-details/{$data->charity['id']}'>{$data->charity['organization_name']}</a>"
+        );
+    else
+        unset($form['contact_for']);
 
     $form['#submit'][] = 'av_volunteer_my_profile_details_charity_form_submit';
 
@@ -675,8 +703,15 @@ function av_volunteer_my_profile_details_charity_form_submit($form, &$form_state
 
     watchdog('andyw', 'running details submit handler');
 
-    //global $user;
+    global $user;
     $uid = getContactPath($_GET['q']);
+    
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
     $data = new My_Profile_Details_Data($uid);
 
     $data->charity['charity_type']       = $form_state['values']['charity_type'];
@@ -688,13 +723,12 @@ function av_volunteer_my_profile_details_charity_form_submit($form, &$form_state
     
     // IF "ok" selected then assign Charity rep role to the user
     if(!isset($thisuser->roles[9]) && isset($form_state['values']['admin_charity_approve'])){  //Check if the user has the role already
-	$role_name = "Charity Rep";
-	$new_role[9] = $role_name;
-	$all_roles = $thisuser->roles + $new_role; // Add new role to existing roles.
-	user_save($thisuser, array('roles' => $all_roles));
-	drupal_set_message(t('User Charity with charity rep role updated!'));
+        $role_name = "Charity Rep";
+        $new_role[9] = $role_name;
+        $all_roles = $thisuser->roles + $new_role; // Add new role to existing roles.
+        user_save($thisuser, array('roles' => $all_roles));
+        drupal_set_message(t('User Charity with charity rep role updated!'));
     }
-    
     
     if ($data->save()) {
         drupal_set_message(t('Details saved!'));
@@ -710,8 +744,15 @@ function av_volunteer_my_profile_details_tab_regional_coordinator($form_state) {
 
     civicrm_initialize();
 
-    // global $user;
+    global $user;
     $uid = getContactPath($_GET['q']);
+    
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
     $data = new My_Profile_Details_Data($uid);
 
     drupal_add_js("
@@ -733,7 +774,9 @@ function av_volunteer_my_profile_details_tab_regional_coordinator($form_state) {
 
     $form['profile_navigation'] =  array(
         '#type'     => 'item',
-        '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+        '#markup'   => theme('av_volunteer-profile-tabs', array(
+            'target_uid' => $uid
+        ))
     );
 
     $form['region'] = array(
@@ -778,9 +821,16 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
 
     civicrm_initialize();
 
-    // global $user;
+    global $user;
     $uid = getContactPath($_GET['q']);
-    $data = new My_Profile_Skills_Data($uid);
+
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
+    $data    = new My_Profile_Skills_Data($uid);
     $contact = new My_Profile_Contact_Data($uid);
 
     #change page title
@@ -811,9 +861,11 @@ function av_volunteer_my_profile_skills_tab($form, $form_state) {
 
     $form += array(
 
-    'profile_navigation' => array(
-        '#type'     => 'item',
-        '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+        'profile_navigation' => array(
+            '#type'     => 'item',
+            '#markup'   => theme('av_volunteer-profile-tabs', array(
+                'target_uid' => $uid
+            )),
         ),
         
         'achievement_level' => array(
@@ -905,8 +957,15 @@ function av_volunteer_my_profile_skills_form_submit($form, $form_state) {
 
     civicrm_initialize();
 
-    // global $user;
+    global $user;
     $uid = getContactPath($_GET['q']);
+
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
     $data = new My_Profile_Skills_Data($uid);
 
     $data->contact['skills_strategy']       = $form_state['values']['skills_strategy'];
@@ -932,16 +991,21 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
 
     civicrm_initialize();
 
-    // global $user;
+    global $user;
     $uid = getContactPath($_GET['q']);
-    $data = new My_Profile_Reference_Data($uid);
 
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
+    $data    = new My_Profile_Reference_Data($uid);
     $contact = new My_Profile_Contact_Data($uid);
 
     #change page title
     $name = $contact->contact['first_name'] . ' ' . $contact->contact['last_name'];
     drupal_set_title("References for $name");
-
 
     drupal_add_css(drupal_get_path('module', 'av_volunteer') . '/css/base.css');
 
@@ -954,7 +1018,9 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
 
         $form['profile_navigation'] = array(
             '#type'     => 'item',
-            '#markup'   => '<a href="/volunteer/my-profile/'.$uid.'" class="btn btn-info btn-profile-info">Contact</a><a href="/volunteer/my-profile/details/'.$uid.'" class="btn btn-info btn-profile-info">Details</a><a href="/volunteer/my-profile/skills/'.$uid.'" class="btn btn-info btn-profile-info">Skills</a><a href="/volunteer/my-profile/references/'.$uid.'" class="btn btn-info btn-profile-info">References</a>'
+            '#markup'   => theme('av_volunteer-profile-tabs', array(
+                'target_uid' => $uid
+            ))
         );
 
         $form['reference_' . $index] = array(
@@ -1056,20 +1122,20 @@ function av_volunteer_my_profile_references_tab($form, $form_state) {
     }
     
     //Adding admin/analyst notes field
-     if (av_role_has_roles('website admin', 'Analyst', 'IT4C Administrator','Regional Controller','Regional Co-ordinator','Regional Coordinator')) {
-	$form['admin_notes'] = array(
-		'#type'        => 'fieldset',
-		'#title'       => 'Admin Notes',
-		'#description' => t('(Admin Notes)'),
-		'#collapsible' => true
-	);
+    if (av_role_has_roles('website admin', 'Analyst', 'IT4C Administrator','Regional Co-ordinator')) {
+        $form['admin_notes'] = array(
+            '#type'        => 'fieldset',
+            '#title'       => 'Admin Notes',
+            '#description' => t('(Admin Notes)'),
+            '#collapsible' => true
+        );
 
-	$form['admin_notes']['admin_notes'] = array(
-		'#type'                => 'textarea',
-		'#title'               => t('Admin Notes'),
-		'#size'  	       => 300,
-		'#default_value' => isset($data->contact["admin_notes"]) ? $data->contact["admin_notes"] : ''
-	);
+        $form['admin_notes']['admin_notes'] = array(
+            '#type'                => 'textarea',
+            '#title'               => t('Admin Notes'),
+            '#size'            => 300,
+            '#default_value' => isset($data->contact["admin_notes"]) ? $data->contact["admin_notes"] : ''
+        );
     }
 
     $form['submit'] = array(
@@ -1088,6 +1154,13 @@ function av_volunteer_my_profile_references_form_submit($form, $form_state) {
 
     global $user;
     $uid = getContactPath($_GET['q']);
+    
+    # prevent record view/edit by unprivileged users
+    if ($uid and !av_role_is_admin($user->uid) and $uid !== $user->uid) { 
+        drupal_set_message(t('You do not have permission to edit this user.'), 'error');
+        return;
+    }
+
     $data = new My_Profile_Reference_Data($uid);
 
     $data->contact['reference1_name']    = $form_state['values']['reference_name0'];
@@ -1113,10 +1186,10 @@ function av_volunteer_my_profile_references_form_submit($form, $form_state) {
     #Assign role of Volunteer with DBS once DBS date completed is entered on form save
     if(!isset($user->roles[15]) && isset($form_state['values']['dbs_completed'])){  //Check if the user has the role already
          $role_name = "Vounteer with DBS";
-    	 $new_role[15] = $role_name;
-	 $all_roles = $user->roles + $new_role; // Add new role to existing roles.
-     	 user_save($user, array('roles' => $all_roles));
-     	// drupal_set_message(t('User Volunteer with DBS role updated!'));
+         $new_role[15] = $role_name;
+         $all_roles = $user->roles + $new_role; // Add new role to existing roles.
+         user_save($user, array('roles' => $all_roles));
+        // drupal_set_message(t('User Volunteer with DBS role updated!'));
     }
 
     $vol = new My_Profile_Contact_Data($uid);

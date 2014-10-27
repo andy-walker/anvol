@@ -31,12 +31,13 @@ function av_volunteer_form_alter(&$form, &$form_state, $form_id) {
     if (in_array($form_id, array(
         'av_volunteer_my_profile_password_tab',
         'av_volunteer_accounts_password_tab'
-    )))
+    ))) {
         $form['confirm_password']['#process'] = array(
             'form_process_password_confirm',
             'av_volunteer_password_confirm',
             'user_form_process_password_confirm'
         );
+    }
 
     return $form;
 
@@ -70,7 +71,7 @@ function av_volunteer_menu() {
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
-        'access callback'  => 'av_role_has_roles',
+        'access callback'  => 'av_role_has_roles_inherit',
         'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
         'type'             => MENU_NORMAL_ITEM
     
@@ -106,7 +107,7 @@ function av_volunteer_menu() {
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
-        'access callback'  => 'av_role_has_roles',
+        'access callback'  => 'av_role_has_roles_inherit',
         'access arguments' => array('website admin', 'Client Rep', 'Charity Rep'),
         'type'             => MENU_NORMAL_ITEM
     
@@ -215,8 +216,8 @@ function av_volunteer_menu() {
         'title'            => 'Skills',
         'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => 'av_role_has_roles',
-        'access arguments' => array('website admin', 'Individual Volunteer', 'Assessor'),
+        'access callback'  => 'av_role_has_roles_inherit',
+        'access arguments' => array('Individual Volunteer'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_skills_tab'),
         'weight'           => 3
@@ -228,8 +229,8 @@ function av_volunteer_menu() {
         'title'            => 'References',
         'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => 'av_role_has_roles',
-        'access arguments' => array('website admin', 'Individual Volunteer', 'Assessor'),
+        'access callback'  => 'av_role_has_roles_inherit',
+        'access arguments' => array('Individual Volunteer'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_references_tab'),
         'weight'           => 4
@@ -546,7 +547,14 @@ function av_volunteer_theme($existing, $type, $theme, $path) {
             'variables' => array(
                 'skills' => null
             )
-        )
+        ),
+        'av_volunteer-profile-tabs' => array(
+            'template'  => 'profile-tabs',
+            'path'      => drupal_get_path('module', 'av_volunteer') . '/templates',
+            'variables' => array(
+                'target_uid' => null
+            )
+        ),       
     );
 
 }
@@ -785,7 +793,7 @@ function av_volunteer_webform_get_value(&$node, &$submission, $field_name) {
  */
 function av_volunteer_webform_submission_insert($node, $submission) {
 
-    watchdog('andyw', 'node = <pre>' . print_r($node, true) . '\n\nsubmission = ' . print_r($submission, true) . '</pre>');
+    //watchdog('andyw', 'node = <pre>' . print_r($node, true) . '\n\nsubmission = ' . print_r($submission, true) . '</pre>');
 
     if (
         
