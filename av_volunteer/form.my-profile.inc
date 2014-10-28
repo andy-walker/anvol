@@ -7,7 +7,7 @@ function getContactPath($location) {
     
     $uid_path = end($path);
 
-    if(count($path) <= 2 or $uid_path === $user->uid or !is_numeric($uid))
+    if (count($path) <= 2 or $uid_path === $user->uid or !is_numeric($uid_path))
         $uid = $user->uid;
     else
         $uid = $uid_path;
