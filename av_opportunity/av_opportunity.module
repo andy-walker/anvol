@@ -11,7 +11,7 @@
  * Implementation of hook_comment_insert
  */
 function av_opportunity_comment_insert($comment) {
-    # hack to force computed field for 'Time spent' on Volunteer Opportunity nodes to update, 
+    # hack to force computed field for 'Time spent' on Volunteer Opportunity nodes to update,
     # whenever a comment is saved - loading the node and saving it should accomplish that.
     if ($node = node_load($comment->nid) and $node->type == 'opportunity')
         node_save($node);
@@ -23,7 +23,7 @@ function av_opportunity_comment_insert($comment) {
 function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
 
     switch ($form_id) {
-        
+
         # 'Opportunity' edit form
         case 'opportunity_node_form':
 
@@ -32,7 +32,7 @@ function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
 
             # add javascript to format taxonomy list
             drupal_add_js("
-                
+
                 jQuery(function() {
                     jQuery('#edit-field-opportunity-region-und option').each(function() {
                         if (!jQuery(this).html().match(/^\-/) && jQuery(this).val() != '_none')
@@ -54,29 +54,29 @@ function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
             }
 
             break;
-        
-        
+
+
         case 'views_exposed_form':
 
             switch (reset(explode('?', request_uri()))) {
-                
+
                 # remove breadcrumb and mark exposed filter submit 'Update List'
                 case '/volunteering/charity-opportunities':
                     drupal_set_breadcrumb('');
-                    $form['submit']['#value'] = t('Update List'); 
-                    break;   
+                    $form['submit']['#value'] = t('Update List');
+                    break;
 
                 # just mark exposed filter submit 'Update List'
                 case '/assessor/opportunities':
                 case '/volunteer/opportunities/search':
                     $form['submit']['#value'] = t('Update List');
-                    break;                  
-            
+                    break;
+
             }
- 
+
             break;
 
-   
+
     }
 
 }
@@ -87,7 +87,7 @@ function av_opportunity_form_alter(&$form, &$form_state, $form_id) {
 function av_opportunity_init() {
 
     # register dependency autoloader
-    spl_autoload_register('_av_opportunity_autoload');           
+    spl_autoload_register('_av_opportunity_autoload');
 
 }
 
@@ -97,10 +97,10 @@ function av_opportunity_init() {
 function av_opportunity_node_presave($node) {
 
     switch (true) {
-        
+
         # when node is a vol_opp that's being updated, and the status has changed ..
         case $node->type == 'opportunity'
-             and isset($node->original) 
+             and isset($node->original)
              and $node->field_opportunitystate['und'][0]['value'] !=
                  $node->original->field_opportunitystate['und'][0]['value']:
 
@@ -162,46 +162,80 @@ function av_opportunity_node_presave($node) {
 }
 
 /**
+ * Implementation of hook_node_insert
+ */
+function av_opportunity_node_insert($node) {
+  // auto populate charity details when charity creates an opp
+  global $user;
+
+  // need to set the original property to avoid errors
+  $node->original = isset($node->original) ? $node->original : NULL;
+
+  if(av_role_has_roles('Charity Rep')) {
+
+    # get contact_id from logged-in user
+    $session =& CRM_Core_Session::singleton();
+    $cid = $session->get('userID');
+
+    $charity_rel = civicrm_api3("Relationship", "getsingle", array(
+            'relationship_type_id'  => 12,
+            'contact_id_b'          => $volunteer_id,
+            'contact_id_a'          => $cid
+        )
+    );
+
+    // relationship must be active
+    if(isset($charity_rel['is_active']) && $charity_rel['is_active'] == 1)
+      $charity_contact = $charity_rel['contact_id_b'];
+
+      // update charity account name (Organisation)
+      $node->field_charity_name['und'][0]['contact_id'] = $charity_contact;
+      // update charity account contact (Charity Rep)
+      $node->field_charity_contact['und'][0]['contact_id'] = $cid;
+
+    // update values to the node ->
+    field_attach_update('node', $node);
+  }
+
+}
+
+/**
  * Implementation of hook_node_update
  */
 function av_opportunity_node_update($node) {
 
     static $flag = 0;
-    
+
     # if we have a status change operation pending, perform that now
     if ($node->type == 'opportunity' and $status = drupal_static('opportunity_status_change'))
         new Opportunity_Status_Change(
-            $node->nid, 
-            $status->old, 
+            $node->nid,
+            $status->old,
             $status->new
         );
 
     $assignedVol = $node->field_volunteer4opp['und'][0]['uid'];
     $originalVol = $node->original->field_volunteer4opp['und'][0]['uid'];
 
-    //watchdog('nathannode', '<pre>' . print_r($node, true) . '</pre>');
-
     # create a relationship on assigned volunteer to the Charity
     if($node->type == 'opportunity' and isset($assignedVol) and !$flag++) {
-
-        //watchdog('nathannode', '<pre>' . print_r($node, true) . '</pre>');
 
         civicrm_initialize();
 
         # get contact_id from logged-in user
         $session =& CRM_Core_Session::singleton();
         $indID = $session->get('userID');
-    
+
         # assigned volunteer's uid
         $volunteer = $node->field_volunteer4opp['und'][0]['uid'];
-    
+
         # get the matched civicrm contact from the drupal user record
         $UFMatch = civicrm_api("UFMatch", "get", array(
                 'version'   => '3',
                 'uf_id'     => $volunteer
             )
         );
-    
+
         $UFMatchID = $UFMatch['id'];
 
         $volunteer_id = $UFMatch['values'][$UFMatchID]['contact_id'];
@@ -214,12 +248,13 @@ function av_opportunity_node_update($node) {
             $OppContact = $node->field_client_contact['und'][0]['contact_id'];
             $rel_id = '17';
         }
-        
+
+        watchdog('nathan', 'assigned vol = ' . $assignedVol . ' original vol = ' . $originalVol);
         if($assignedVol !== $originalVol)  {
 
             # get the start date for the relationship
             $start = date('m/j/Y');
-    
+            watchdog('nathan', 'relationship creation');
             # create a relationship of type 'Volunteer Is' for assigned volunteer
             $VolRelationship = civicrm_api("Relationship", "Create", array(
                     'version'               => '3',
@@ -232,13 +267,11 @@ function av_opportunity_node_update($node) {
             );
         }
 
-        watchdog('nathannode', '<pre>' . print_r($VolRelationship, true) . '</pre>');
-            
         # if op has been completed, end the relationship
         if(($node->field_completed['und'][0]['value'] !== $node->original->field_completed['und'][0]['value']
              and $node->field_completed['und'][0]['value'] === 1) || ($assignedVol !== $originalVol and !empty($originalVol))) {
 
-        if($node->field_completed['und'][0]['value'] === 1) {  
+        if($node->field_completed['und'][0]['value'] === 1) {
             $OppRelationship = civicrm_api("Relationship", "Get", array(
                     'version'               => '3',
                     'relationship_type_id'  => $rel_id,
@@ -251,14 +284,14 @@ function av_opportunity_node_update($node) {
         if($assignedVol !== $originalVol) {
 
             $volunteer = $node->original->field_volunteer4opp['und'][0]['uid'];
-    
+
             # get the matched civicrm contact from the drupal user record
             $UFMatch = civicrm_api("UFMatch", "get", array(
                     'version'   => '3',
                     'uf_id'     => $volunteer
                 )
             );
-    
+
             $UFMatchID = $UFMatch['id'];
 
             $volunteer_id = $UFMatch['values'][$UFMatchID]['contact_id'];
@@ -325,7 +358,7 @@ function av_opportunity_node_update($node) {
 function av_opportunity_node_view($node, $view_mode, $langcode) {
 
     if($node->type == 'opportunity') {
-        
+
         global $user;
         civicrm_initialize();
 
@@ -371,10 +404,6 @@ function av_opportunity_node_view($node, $view_mode, $langcode) {
 
             $assigned_vol = $volUFMatch['values'][$volUFMatchID]['contact_id'];
 
-            if($assigned_vol === $indID) {
-                watchdog('nathantest', 'testing');
-            }
-
             # the relationship exists? Great! show the node comments
             if((!empty($volRel['values']) and $volRel['values'][$volRelID]['is_active'] == 1) || (in_array('Administrator', $user->roles))) {
                 $node->comment = 2; # comment (0 = disabled, 1 = read only, 2 = read/write)
@@ -387,10 +416,8 @@ function av_opportunity_node_view($node, $view_mode, $langcode) {
             $node->comment = 0;
         }
 
-        //watchdog('nathannode2', '<pre>' . print_r($node, true) . '</pre>');
-
         return $node;
-    } 
+    }
 }
 
 function av_opportunity_node_view_alter(&$build) {
@@ -437,7 +464,7 @@ function _av_opportunity_autoload($entity) {
 function av_opportunity_cron(){
 
 		civicrm_initialize();
-		
+
 		#get all the volunteers from the system , add additional filters here to restrict the number of users returned
 		$params_contact = array(
 		  'version' => 3,
@@ -448,28 +475,28 @@ function av_opportunity_cron(){
 		);
 		$results = civicrm_api('Contact', 'get', $params_contact);
 		#watchdog('karthikguru_mainresults', '<pre>' . print_r($results, true) . '</pre>');
-		
+
 		#loop through each individual record
 		foreach($results['values'] as $contact) {
 			#watchdog('karthikguru', '<pre>' . print_r($contact, true) . '</pre>');
 			#watchdog('karthikguru', '<pre>' . print_r($contact['uf_name'], true) . '</pre>');
-			
+
 			# Step 1 - get user regions
 			$id_contact = $contact['contact_id'];
 			$email_contact = $contact['email'];
-					
+
 			$params = array(
 			  'version' => 3,
 			  'sequential' => 1,
 			  'id' => $id_contact,
 			  'return' => 'custom_96',
 			);
-			
+
 			$regions = civicrm_api('Contact', 'getvalue', $params);
 			$regions_values = convertRegionsFromTextOpportunity($regions);
-			
+
 			#watchdog('karthikguru_regions', '<pre>' . print_r($regions_values, true) . '</pre>');
-			
+
 			#Step 2 - Get User Skills
 			$params_skills = array(
 			  'version' => 3,
@@ -482,21 +509,21 @@ function av_opportunity_cron(){
 			  'return.custom_101' => 1,
 			);
 			$result_skills = civicrm_api('CustomValue', 'get', $params_skills);
-						
+
 			#watchdog('karthikguru_skills', '<pre>' . print_r($result_skills, true) . '</pre>');
-				
+
 			#merge individuals skills into one single array
 			$final_skills = array();
 			foreach($result_skills[values] as $skills){
 				if(!empty($skills[latest])){
 					$final_skills = array_merge($final_skills,$skills[latest]);
 				}
-				
+
 			}
-									
+
 			#Step 3 - Query to get opportunity based on regions and skills
 			$query = new EntityFieldQuery();
-		
+
 			$query->entityCondition('entity_type', 'node')
 			  ->entityCondition('bundle', 'opportunity')
 			  ->propertyCondition('status', 1)
@@ -504,42 +531,42 @@ function av_opportunity_cron(){
 			  ->fieldCondition('field_skilltype', 'value', $final_skills, 'IN')
 			  #filter by regions
 			 ->fieldCondition('field_opportunity_region', 'tid', $regions_values, 'IN');
-			  
-			
+
+
 			$opportunities_list = $query->execute();
-			
+
 			#watchdog('karthikguru_oppo', '<pre>' . print_r($opportunities_list[node], true) . '</pre>');
-			 
+
 			$html_body = "<h2>We currently have volunteering opportunities that match your skill set. Follow any of these links to find out more details</h2><ol>";
-			
+
 			foreach($opportunities_list[node] as $nodes){
 				$node_temp = node_load($nodes->nid);
-				
+
 				$html_body = $html_body . '<li><a href="/node/'. $nodes->nid .'">'. $node_temp->title .'</a></li>';
-				
+
 				#watchdog('karthikguru_status_email','<pre>' . print_r($node_temp, true) . '</pre>');
 			}
-			
+
 			$html_body = $html_body . '</ol>';
-			
+
 			#mimemail message sending starts
 			$message = array(
 			  'to' => $email_contact,
 			  'subject' => t('Volunteering Opportunites matching your regions and skills'),
 			  'body' =>$html_body,
-			  'headers'=>array(),   
-			); 
-						
+			  'headers'=>array(),
+			);
+
 			$MimeMailSystem = drupal_mail_system('mimemail', 'av_opportunity');
 			$message = $MimeMailSystem->format($message);
-			
+
 			if($MimeMailSystem->mail($message)){
 			 	#watchdog('karthikguru_status_email', 'sent');
 			}
 			else	{
 			  	#watchdog('karthikguru_status_email', 'failure');
 			}
-			
+
 		}
 }
 
@@ -550,7 +577,7 @@ function av_opportunity_cron(){
 
  function convertRegionsFromTextOpportunity($regions_text) {
 
-        $region_ids = array(); 
+        $region_ids = array();
        // watchdog('andyw', 'regions_text = ' . $regions_text);
 
         foreach (explode(',', $regions_text) as $region)
@@ -558,5 +585,5 @@ function av_opportunity_cron(){
 
        // watchdog('andyw', 'region_ids = <pre>' . print_r($region_ids, true) . '</pre>');
         return $region_ids;
-        
+
 }
