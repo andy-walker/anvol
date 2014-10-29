@@ -596,7 +596,7 @@ function av_volunteer_my_profile_details_form_submit($form, &$form_state) {
 
 
 function av_volunteer_my_profile_details_tab_charity($form_state) {
-    
+
     civicrm_initialize();
 
     global $user;
@@ -684,7 +684,7 @@ function av_volunteer_my_profile_details_tab_charity($form_state) {
 
     );
 
-    if (isset($form['contact_for']))
+    if (isset($data->charity['id']))
         $form['contact_for'] = array(
             '#type'   => 'item',
             '#title'  => t('Contact for') . ':',

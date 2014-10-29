@@ -59,7 +59,7 @@ function av_role_has_roles_inherit() {
             
             # if so, load the user who's roles we're interested in
             $subject_user = user_load($subject_uid);
-        
+
             # iterate through roles, perform $role_map lookup, and attempt to match rid
             foreach ($arguments as $role)
                 if (isset($subject_user->roles[$role_map[$role]]))

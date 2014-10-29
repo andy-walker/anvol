@@ -84,7 +84,7 @@ function av_volunteer_menu() {
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
-        'access arguments' => array('website admin', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'access arguments' => array('IT4C Administrator', 'website admin', 'Client Rep', 'Charity Rep', 'Assessor'),
         'type'             => MENU_NORMAL_ITEM
     
     );
@@ -96,7 +96,7 @@ function av_volunteer_menu() {
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
-        'access arguments' => array('website admin', 'Regional Controller'),
+        'access arguments' => array('IT4C Administrator', 'website admin', 'Regional Controller'),
         'type'             => MENU_NORMAL_ITEM
     
     );
@@ -108,7 +108,7 @@ function av_volunteer_menu() {
         'page arguments'   => array('av_volunteer_my_profile'),
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles_inherit',
-        'access arguments' => array('website admin', 'Client Rep', 'Charity Rep'),
+        'access arguments' => array('IT4C Administrator', 'website admin', 'Client Rep', 'Charity Rep', 'Analyst'),
         'type'             => MENU_NORMAL_ITEM
     
     );
@@ -177,8 +177,8 @@ function av_volunteer_menu() {
         'title'            => 'Details',
         'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => 'av_role_has_roles',
-        'access arguments' => array('website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
+        'access callback'  => 'av_role_has_roles_inherit',
+        'access arguments' => array('IT4C Administrator', 'website admin', 'Individual Volunteer', 'Client Rep', 'Charity Rep', 'Assessor'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_details_tab'),
         'weight'           => 2
@@ -190,8 +190,8 @@ function av_volunteer_menu() {
         'title'            => 'Details',
         'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
-        'access callback'  => 'av_role_has_roles',
-        'access arguments' => array('website admin', 'Client Rep', 'Charity Rep'),
+        'access callback'  => 'av_role_has_roles_inherit',
+        'access arguments' => array('IT4C Administrator', 'website admin', 'Client Rep', 'Charity Rep', 'Analyst'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_details_tab'),
         'weight'           => 2
@@ -204,7 +204,7 @@ function av_volunteer_menu() {
         'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles',
-        'access arguments' => array('Regional Controller'),
+        'access arguments' => array('IT4C Administrator', 'Regional Controller'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_details_tab'),
         'weight'           => 2
@@ -217,7 +217,7 @@ function av_volunteer_menu() {
         'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles_inherit',
-        'access arguments' => array('Individual Volunteer'),
+        'access arguments' => array('IT4C Administrator', 'Individual Volunteer', 'Analyst', 'Regional Co-ordinator'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_skills_tab'),
         'weight'           => 3
@@ -230,7 +230,7 @@ function av_volunteer_menu() {
         'type'             => MENU_NORMAL_ITEM,
         'file'             => 'form.my-profile.inc',
         'access callback'  => 'av_role_has_roles_inherit',
-        'access arguments' => array('Individual Volunteer'),
+        'access arguments' => array('IT4C Administrator', 'Individual Volunteer', 'Analyst', 'Regional Co-ordinator'),
         'page callback'    => 'drupal_get_form',
         'page arguments'   => array('av_volunteer_my_profile_references_tab'),
         'weight'           => 4
@@ -814,9 +814,9 @@ function av_volunteer_webform_submission_insert($node, $submission) {
                 2 => 'authenticated user',
                 7 => 'Individual Volunteer'
             ) : array(
-                2 => 'authenticated user'
+                2 => 'authenticated user',
+                9 => 'Charity Rep'
             ));
-
 
             # save user object
             $user = user_save(null, array(
@@ -824,7 +824,6 @@ function av_volunteer_webform_submission_insert($node, $submission) {
                 'mail'   => $email,
                 'status' => 1,
                 'roles'  => $roles
-
             ));
 
             # if all went well, send confirmation email
